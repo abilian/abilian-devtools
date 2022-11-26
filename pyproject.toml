@@ -1,0 +1,55 @@
+[tool.poetry]
+name = "abilian-devtools"
+version = "0.1.0"
+description = "A curated set of dependencies for quality software development"
+authors = ["Stefane Fermigier <sf@abilian.com>"]
+license = "MIT"
+readme = "README.md"
+packages = [{include = "abilian_devtools", from = "src"}]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+
+# Testing
+pytest = "^7"
+pytest-cov = "^4"
+pytest-xdist = "*"
+nox = "*"
+
+# Linting
+flake8 = "^5"
+flake8-bandit = "*"
+flake8-bugbear = "*"
+flake8-cognitive-complexity = "*"
+flake8-comprehensions = "*"
+flake8-datetimez = "*"
+flake8-functions = "*"
+flake8-mutable = "*"
+flake8-pytest = "*"
+flake8-simplify = "*"
+flake8-super = "*"
+flake8-super-call = "*"
+flake8-tidy-imports = "*"
+flake8-tuple = "*"
+pep8-naming = "*"
+ruff = "*"
+pyright = "*"
+
+# Formatting
+isort = "*"
+black = "*"
+docformatter = "*"
+
+# Typechecking
+mypy = "*"
+types-toml = "*"
+
+# More checks
+vulture = "*"
+deptry = "*"
+sbom4python = "^0.4.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
