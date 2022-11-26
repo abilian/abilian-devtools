@@ -17,7 +17,7 @@ pytest-xdist = "*"
 nox = "*"
 
 # Linting
-flake8 = "^5"
+flake8 = "^6"
 flake8-bandit = "*"
 flake8-bugbear = "*"
 flake8-cognitive-complexity = "*"
@@ -33,7 +33,6 @@ flake8-tidy-imports = "*"
 flake8-tuple = "*"
 pep8-naming = "*"
 ruff = "*"
-pyright = "*"
 
 # Formatting
 isort = "*"
@@ -42,12 +41,14 @@ docformatter = "*"
 
 # Typechecking
 mypy = "*"
-types-toml = "*"
+pyright = "*"
 
-# More checks
+# Dependencies
 vulture = "*"
 deptry = "*"
-sbom4python = "^0.4.0"
+
+# Supply chain issues
+reuse = "*"
 
 
 [build-system]
