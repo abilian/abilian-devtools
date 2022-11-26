@@ -8,12 +8,17 @@ readme = "README.md"
 packages = [{include = "abilian_devtools", from = "src"}]
 
 [tool.poetry.dependencies]
-python = "^3.10"
+python = "^3.9"
+
+# Git integration
+pre-commit = "*"
 
 # Testing
 pytest = "^7"
 pytest-cov = "^4"
+profilehooks = "*"
 pytest-xdist = "*"
+# pytest-testmon = "^1.2.0"
 nox = "*"
 
 # Linting
@@ -43,12 +48,14 @@ docformatter = "*"
 mypy = "*"
 pyright = "*"
 
-# Dependencies
+# Dependencies & supply chain
 vulture = "*"
 deptry = "*"
-
-# Supply chain issues
+pip = "*"
 reuse = "*"
+safety = "*"
+pip-audit = "*"
+poetryup = "*"
 
 
 [build-system]
