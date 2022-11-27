@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "abilian-devtools"
-version = "0.1.2"
+version = "0.1.3"
 description = "A curated set of dependencies for quality software development"
 authors = ["Stefane Fermigier <sf@abilian.com>"]
 license = "MIT"
@@ -8,7 +8,7 @@ readme = "README.md"
 packages = [{include = "abilian_devtools", from = "src"}]
 
 [tool.poetry.dependencies]
-python = "^3.8.1"
+python = "^3.9"
 
 # Git integration
 pre-commit = "*"
