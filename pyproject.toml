@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "abilian-devtools"
-version = "0.1.4"
+version = "0.1.5"
 description = "A curated set of dependencies for quality software development"
 authors = ["Stefane Fermigier <sf@abilian.com>"]
 license = "MIT"
@@ -24,6 +24,7 @@ nox = "*"
 # Linting
 flake8 = "^6"
 
+# Mpre plugins: https://github.com/DmytroLitvinov/awesome-flake8-extensions
 flake8-bandit = "*"
 flake8-breakpoint = "*"
 flake8-bugbear = "*"
@@ -35,14 +36,24 @@ flake8-if-expr = "*"
 flake8-isort = "*"
 flake8-logging-format = "*"
 flake8-mutable = "*"
-flake8-pytest = "*"
-flake8-pytest-style = "*"
 flake8-simplify = "*"
 flake8-super = "*"
 flake8-super-call = "*"
 flake8-tidy-imports = "*"
 flake8-tuple = "*"
 pep8-naming = "*"
+
+# Typing
+flake8-pep3101 = "*"
+flake8-no-pep420 = "*"
+flake8-pep585 = "*"
+flake8-pep604 = "*"
+
+# Testing
+flake8-assertive = "*"
+flake8-pytest = "*"
+flake8-pytest-style = "*"
+
 
 # Useful but later:
 # flake8-requirements = "*"
