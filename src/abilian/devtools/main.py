@@ -24,8 +24,14 @@ def check(args: list[str]):
         else:
             args2.append(arg)
 
-    run(f"ruff {' '.join(args2)}")
-    run(f"flake8 {' '.join(args2)}")
+    args_str = ' '.join(args2)
+
+    run(f"ruff {args_str}")
+    run(f"flake8 {args_str}")
+    run("mypy --show-error-codes {args_str}")
+    run("pyright")
+    run("vulture --min-confidence 80 .")
+    run("deptry .")
 
 
 @app.command()
