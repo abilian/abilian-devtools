@@ -5,10 +5,15 @@ description = "A curated set of dependencies for quality software development"
 authors = ["Stefane Fermigier <sf@abilian.com>"]
 license = "MIT"
 readme = "README.md"
-packages = [{include = "abilian_devtools", from = "src"}]
+packages = [{include = "abilian", from = "src"}]
+
+[tool.poetry.scripts]
+adt = "abilian.devtools.main:app"
 
 [tool.poetry.dependencies]
 python = "^3.9"
+
+typer = "*"
 
 # Git integration
 pre-commit = "*"
@@ -77,12 +82,12 @@ mypy = "*"
 pyright = "*"
 
 # Dependencies & supply chain
-vulture = "*"
 deptry = "*"
 pip = "*"
+pip-audit = "*"
 reuse = "*"
 safety = "*"
-pip-audit = "*"
+vulture = "*"
 # poetryup = "*"
 
 
