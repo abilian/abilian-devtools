@@ -16,11 +16,13 @@ This is a curated, and opiniated, collection of best-of-breed Python development
 Usage
 -----
 
+Instead of having to track all the 40+ projects and plugins we have curated, you just need to add `abilian-devtools = '*'` in your project's `requirements.in` or `pyproject.toml`.
+
 You still need to properly configure and call them in your own projects.
 
 For example configuration, see, for instance, <https://github.com/abilian/nua> (`Makefile`, `pyproject.toml`, `setup.cfg`).
 
-We're providing a CLI called `adt`,
+As a bonus, we're providing a CLI called `adt` which can help you get started:
 
 ```
 $ adt --help
