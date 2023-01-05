@@ -34,6 +34,16 @@ def check(args: list[str]):
     run("deptry .")
 
 
+@app.command("security-check")
+def security_check():
+    """Run security checks."""
+    run("pip-audit")
+    run("safety check")
+
+    # TODO: don't assume source dir is src
+    # run("bandit -r src")
+
+
 @app.command()
 def test():
     """Run tests."""
