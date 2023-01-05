@@ -5,13 +5,7 @@
 PKG=pywire
 
 
-all: test lint
-
-#
-# Run
-#
-run:
-	flask run
+all: lint
 
 #
 # Setup
@@ -59,9 +53,6 @@ lint/black: ## check style with black
 
 lint: lint/flake8 lint/black ## check style
 
-test: ## run tests quickly with the default Python
-	pytest
-	@echo ""
 
 test-with-coverage:
 	@echo "--> Running Python tests"
@@ -73,16 +64,10 @@ test-with-typeguard:
 	pytest --typeguard-packages=${PKG}
 	@echo ""
 
-vagrant-tests:
-	vagrant up
-	vagrant ssh -c /vagrant/deploy/vagrant_test.sh
-
 
 #
 # Various Checkers
 #
-lint: lint-py lint-js lint-rst lint-doc
-
 lint-ci: lint
 
 lint-all: lint lint-mypy lint-bandit

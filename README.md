@@ -43,8 +43,9 @@ Abilian Dev Tool command-line runner.
 │                                                      exit.                   │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ╭─ Commands ───────────────────────────────────────────────────────────────────╮
-│ all      Run everything.                                                     │
-│ check    Run checker/linters on specified files or directories.              │
-│ test     Run tests.                                                          │
+│ all               Run everything.                                            │
+│ check             Run checker/linters on specified files or directories.     │
+│ security-check    Run security checks.                                       │
+│ test              Run tests.                                                 │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ```
