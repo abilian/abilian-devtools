@@ -1,0 +1,10 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: abilian-devtools
+Upstream-Contact: Stefane Fermigier <sf@abilian.com>
+Source: https://pypi.org/project/abilian-devtools/
+
+
+Files: *
+Copyright: 2022-2023 Abiliab SAS <https://abilian.com>
+License: MIT
+
