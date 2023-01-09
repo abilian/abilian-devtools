@@ -16,7 +16,10 @@ def run(cmd):
     typer.secho(cmd, fg=typer.colors.GREEN)
     args = shlex.split(cmd)
     p = subprocess.Popen(args)
-    if p.returncode != 0:
+    p.wait()
+    if p.returncode:
+        typer.secho(f"failed with error code {p.returncode}", fg="red")
+        # typer.secho(p.stderr)
         sys.exit()
 
 

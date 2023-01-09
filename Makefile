@@ -38,6 +38,7 @@ test:
 
 test-randomly:
 	@echo "--> Running Python tests in random order"
+	pytest
 
 clean-test: ## remove test and coverage artifacts
 	rm -fr .tox/
