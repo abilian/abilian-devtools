@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "abilian-devtools"
-version = "0.2.3"
+version = "0.2.4"
 description = "A curated set of dependencies for quality software development"
 authors = ["Stefane Fermigier <sf@abilian.com>"]
 license = "MIT"
@@ -27,7 +27,7 @@ pytest = "^7"
 pytest-cov = "^4"
 profilehooks = "*"
 pytest-xdist = "*"
-pytest-randomly = "*"
+pytest-random-order = "*"
 # pytest-testmon = "^1.2.0"
 nox = "*"
 
