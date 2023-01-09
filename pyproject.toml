@@ -141,7 +141,7 @@ ignore_obsolete = [
     "pyright",
     "pytest",
     "pytest-cov",
-    "pytest-randomly",
+    "pytest-random-order",
     "pytest-xdist",
     "reuse",
     "ruff",

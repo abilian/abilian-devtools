@@ -68,7 +68,7 @@ def all():
 
 @app.callback()
 def main():
-    """Abilian Dev Tool command-line runner."""
+    """Abilian Dev Tools command-line runner."""
 
 
 if __name__ == "__main__":
