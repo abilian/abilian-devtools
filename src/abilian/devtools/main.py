@@ -2,7 +2,8 @@
 #
 # SPDX-License-Identifier: MIT
 
-import os
+import shlex
+import subprocess
 import sys
 from pathlib import Path
 
@@ -13,8 +14,9 @@ app = typer.Typer()
 
 def run(cmd):
     typer.secho(cmd, fg=typer.colors.GREEN)
-    result = os.system(cmd)
-    if result:
+    args = shlex.split(cmd)
+    p = subprocess.Popen(args)
+    if p.returncode != 0:
         sys.exit()
 
 
@@ -28,11 +30,11 @@ def check(args: list[str]):
         else:
             args2.append(arg)
 
-    args_str = ' '.join(args2)
+    args_str = " ".join(args2)
 
     run(f"ruff {args_str}")
     run(f"flake8 {args_str}")
-    run("mypy --show-error-codes {args_str}")
+    run(f"mypy --show-error-codes {args_str}")
     run("pyright")
     run("vulture --min-confidence 80 .")
     run("deptry .")
@@ -63,9 +65,7 @@ def all():
 
 @app.callback()
 def main():
-    """
-    Abilian Dev Tool command-line runner.
-    """
+    """Abilian Dev Tool command-line runner."""
 
 
 if __name__ == "__main__":

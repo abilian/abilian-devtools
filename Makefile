@@ -45,75 +45,17 @@ clean-test: ## remove test and coverage artifacts
 	rm -fr htmlcov/
 	rm -fr .pytest_cache
 
-lint/flake8: ## check style with flake8
-	flake8 src tests
+lint:
+	adt all
 
-lint/black: ## check style with black
-	black --check src tests
-
-lint: lint/flake8 lint/black ## check style
-
-
-test-with-coverage:
-	@echo "--> Running Python tests"
-	py.test --cov $(PKG)
-	@echo ""
-
-test-with-typeguard:
-	@echo "--> Running Python tests with typeguard"
-	pytest --typeguard-packages=${PKG}
-	@echo ""
-
-
-#
-# Various Checkers
-#
-lint-ci: lint
-
-lint-all: lint lint-mypy lint-bandit
-
-lint-py:
-	@echo "--> Linting Python files /w flake8"
-	flake8 src tests
-	@echo ""
-
-lint-mypy:
-	@echo "--> Typechecking Python files w/ mypy"
-	mypy src tests
-	@echo ""
-
-lint-travis:
-	@echo "--> Linting .travis.yml files"
-	travis lint --no-interactive
-	@echo ""
-
-lint-rst:
-	@echo "--> Linting .rst files"
-	-rst-lint *.rst
-	@echo ""
-
-lint-doc:
-	@echo "--> Linting doc"
-	@echo "TODO"
-	#sphinx-build -W -b dummy docs/ docs/_build/
-	#sphinx-build -b dummy docs/ docs/_build/
-	@echo ""
-
-lint-js:
-	echo "TODO"
 
 #
 # Formatting
 #
-format: format-py format-js
-
-format-py:
+format:
 	docformatter -i -r src
-	black src tests
+	black src
 	isort src tests
-
-format-js:
-	echo "TODO"
 
 
 #
@@ -139,7 +81,7 @@ clean:
 		dist build pip-wheel-metadata junit-*.xml htmlcov coverage.xml
 
 tidy: clean
-	rm -rf .tox .nox .dox .travis-solo
+	rm -rf .nox
 	rm -rf node_modules
 	rm -rf instance
 

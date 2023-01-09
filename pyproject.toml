@@ -27,6 +27,7 @@ pytest = "^7"
 pytest-cov = "^4"
 profilehooks = "*"
 pytest-xdist = "*"
+pytest-randomly = "*"
 # pytest-testmon = "^1.2.0"
 nox = "*"
 
