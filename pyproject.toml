@@ -5,13 +5,13 @@ description = "A curated set of dependencies for quality software development"
 authors = ["Stefane Fermigier <sf@abilian.com>"]
 license = "MIT"
 readme = "README.md"
-packages = [{include = "abilian", from = "src"}]
+packages = [{include = "abilian_devtools", from = "src"}]
 repository = "https://github.com/abilian/abilian-devtools"
 keywords = ["qa", "testing", "linting", "typechecking", "security", "supply chain"]
 
 
 [tool.poetry.scripts]
-adt = "abilian.devtools.main:app"
+adt = "abilian_devtools.main:app"
 
 
 [tool.poetry.dependencies]

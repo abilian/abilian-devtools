@@ -1,7 +1,7 @@
 import pytest
 from typer.testing import CliRunner
 
-from abilian.devtools.main import app
+from abilian_devtools.main import app
 
 
 @pytest.fixture()
