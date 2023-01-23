@@ -63,7 +63,7 @@ def test():
 
 @app.command()
 def all():
-    """Run everything."""
+    """Run everything (linters and tests)."""
     check(["src", "tests"])
     test()
 
