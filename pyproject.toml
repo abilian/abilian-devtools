@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "abilian-devtools"
-version = "0.4.1"
+version = "0.4.2"
 description = "A curated set of dependencies for quality software development"
 authors = ["Stefane Fermigier <sf@abilian.com>"]
 license = "MIT"
@@ -98,6 +98,9 @@ safety = "*"
 vulture = "*"
 # poetryup = "*"
 
+
+[tool.poetry.group.dev.dependencies]
+scriv = "^1.2.0"
 
 [build-system]
 requires = ["poetry-core"]
