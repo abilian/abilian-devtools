@@ -1,10 +1,12 @@
 # SPDX-FileCopyrightText: 2023 2022-2023 Abilian SAS <https://abilian.com/>
 #
 # SPDX-License-Identifier: MIT
-
+import glob
 import shlex
+import shutil
 import subprocess
 import sys
+from os import rmdir
 from pathlib import Path
 
 import typer
@@ -66,9 +68,18 @@ def all():
     test()
 
 
+@app.command()
+def clean():
+    """Cleanup cruft."""
+    typer.echo("Removing cache directories")
+    for cache_dir in glob.glob("**/__pycache__", recursive=True):
+        shutil.rmtree(cache_dir)
+
+
 @app.callback()
 def main():
     """Abilian Dev Tools command-line runner."""
+    # Nothing here yet
 
 
 if __name__ == "__main__":
