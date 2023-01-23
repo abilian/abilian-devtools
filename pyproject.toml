@@ -154,3 +154,16 @@ ignore_obsolete = [
     "safety",
     "vulture",
 ]
+
+[tool.scriv]
+version = "literal: pyproject.toml: tool.poetry.version"
+format = "md"
+categories = [
+  "Removed",
+  "Added",
+  "Changed",
+  "Deprecated",
+  "Fixed",
+  "Security",
+  "Doc",
+]
