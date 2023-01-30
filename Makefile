@@ -47,7 +47,7 @@ clean-test: ## remove test and coverage artifacts
 	rm -fr .pytest_cache
 
 lint:
-	adt all
+	adt check src tests
 
 
 #

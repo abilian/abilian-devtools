@@ -40,7 +40,7 @@ def check(args: list[str]):
     run(f"flake8 {args_str}")
     run(f"mypy --show-error-codes {args_str}")
     run("pyright")
-    run("vulture --min-confidence 80 .")
+    run(f"vulture --min-confidence 80 {args_str}")
     run("deptry .")
 
 
