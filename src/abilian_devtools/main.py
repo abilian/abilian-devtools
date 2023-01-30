@@ -6,7 +6,6 @@ import shlex
 import shutil
 import subprocess
 import sys
-from os import rmdir
 from pathlib import Path
 
 import typer
