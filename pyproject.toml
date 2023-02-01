@@ -84,7 +84,8 @@ ruff = "*"
 # Formatting
 isort = "*"
 black = "*"
-docformatter = "*"
+# Later:
+# docformatter = "*"
 
 # Typechecking
 mypy = "*"
