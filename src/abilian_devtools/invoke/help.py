@@ -40,9 +40,12 @@ class MakefileParser:
         return self.targets
 
     def parse_line(self, line: str):
+        if line.startswith(".PHONY:"):
+            return
+
         if m := re.match(r"^## (.*)", line):
             self.description = m.group(1)
-        elif m := re.match("^(.*?):", line):
+        elif m := re.match(r"^(\S*?):", line):
             self.target = m.group(1)
             if self.description:
                 self.targets.append([self.target, self.description])
