@@ -10,6 +10,8 @@ all: lint
 #
 # Setup
 #
+
+## Install development dependencies and pre-commit hook (env must be already activated)
 develop: install-deps activate-pre-commit configure-git
 
 install-deps:
@@ -29,8 +31,8 @@ configure-git:
 #
 # testing & checking
 #
-test-all: test test-readme
 
+## Run python tests
 test:
 	@echo "--> Running Python tests"
 	pytest --ff -x -p no:randomly
@@ -40,12 +42,14 @@ test-randomly:
 	@echo "--> Running Python tests in random order"
 	pytest
 
+## Cleanup tests artifacts
 clean-test: ## remove test and coverage artifacts
 	rm -fr .tox/
 	rm -f .coverage
 	rm -fr htmlcov/
 	rm -fr .pytest_cache
 
+## Lint / check typing
 lint:
 	adt check src tests
 
@@ -53,6 +57,8 @@ lint:
 #
 # Formatting
 #
+
+## Format / beautify code
 format:
 	docformatter -i -r src
 	black src
@@ -74,6 +80,7 @@ doc-pdf:
 	sphinx-build -W -b latex docs/ docs/_build/latex
 	make -C docs/_build/latex all-pdf
 
+## Cleanup repository
 clean:
 	rm -f **/*.pyc
 	find . -type d -empty -delete
@@ -81,20 +88,18 @@ clean:
 		.pytest_cache .pytest .DS_Store  docs/_build docs/cache docs/tmp \
 		dist build pip-wheel-metadata junit-*.xml htmlcov coverage.xml
 
+## Cleanup harder
 tidy: clean
 	rm -rf .nox
 	rm -rf node_modules
 	rm -rf instance
 
-update-pot:
-	# _n => ngettext, _l => lazy_gettext
-	python setup.py extract_messages update_catalog compile_catalog
-
+## Update dependencies
 update-deps:
 	pip install -U pip setuptools wheel
 	poetry update
-	poetry export -o requirements.txt
 
+## Publish to PyPI
 publish: clean
 	git push --tags
 	poetry build
