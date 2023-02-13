@@ -1,6 +1,7 @@
 """Invoke tasks for subrepos.
 
-Should be used at a higher level, e.g. for constructing "subrepos" tasks.
+Should be used at a higher level, e.g. for constructing "subrepos"
+tasks.
 """
 from collections.abc import Sequence
 
@@ -8,7 +9,7 @@ from invoke import Context
 
 
 def h1(msg: str):
-    print(str)
+    print(msg)
 
 
 def run_in_subrepos(c: Context, cmd: str, sub_repos: Sequence[str] = ()):

@@ -68,6 +68,9 @@ format:
 #
 # Everything else
 #
+help:
+	@inv help-make
+
 install:
 	poetry install
 
