@@ -23,9 +23,9 @@ def help_make(c: Context):
 
     max_len = max(len(t[0]) for t in targets)
 
-    print("Targets:\n")
+    print("Most interesting targets:\n")
     for targets, description in targets:
-        print(f"{targets:<{max_len}}  {description}")
+        print(f"  {targets:<{max_len}}   {description}")
 
 
 class MakefileParser:
