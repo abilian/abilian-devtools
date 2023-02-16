@@ -1,11 +1,11 @@
 [tool.poetry]
 name = "abilian-devtools"
-version = "0.4.8"
+version = "0.4.9"
 description = "A curated set of dependencies for quality software development"
 authors = ["Stefane Fermigier <sf@abilian.com>"]
 license = "MIT"
 readme = "README.md"
-packages = [{include = "abilian_devtools", from = "src"}]
+packages = [{ include = "abilian_devtools", from = "src" }]
 repository = "https://github.com/abilian/abilian-devtools"
 keywords = ["qa", "testing", "linting", "typechecking", "security", "supply chain"]
 
@@ -98,7 +98,8 @@ pip-audit = "*"
 reuse = "*"
 safety = "*"
 vulture = "*"
-# poetryup = "*"
+
+# Invoke
 invoke = "^2.0.0"
 tomlkit = "^0.11.6"
 
@@ -174,14 +175,21 @@ ignore_obsolete = [
 version = "literal: pyproject.toml: tool.poetry.version"
 format = "md"
 categories = [
-  "Removed",
-  "Added",
-  "Changed",
-  "Deprecated",
-  "Fixed",
-  "Security",
-  "Doc",
+    "Removed",
+    "Added",
+    "Changed",
+    "Deprecated",
+    "Fixed",
+    "Security",
+    "Doc",
 ]
 
 
 [tool.pyright]
+
+
+[tool.bandit]
+skips = [
+    "B404", # blacklist
+    "B603", # subprocess_without_shell_equals_true
+]

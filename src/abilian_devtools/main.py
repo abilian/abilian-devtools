@@ -14,7 +14,7 @@ app = typer.Typer()
 
 
 def run(cmd):
-    typer.secho(cmd, fg=typer.colors.GREEN)
+    typer.secho("> " + cmd, fg=typer.colors.GREEN)
     args = shlex.split(cmd)
     p = subprocess.Popen(args)
     p.wait()
@@ -46,13 +46,25 @@ def check(args: list[str]):
 
 
 @app.command("security-check")
-def security_check():
-    """Run security checks."""
-    run("pip-audit")
-    run("safety check")
+def security_check(ctx: typer.Context):
+    """Run security checks (deprecated, use 'audit' instead)."""
+    typer.secho(
+        "WARNING: 'security-check' is deprecated, use 'audit' instead.",
+        fg=typer.colors.RED,
+    )
+    ctx.invoke(audit)
 
+
+@app.command()
+def audit():
+    """Run security audit."""
+    run("pip-audit")
     # TODO: don't assume source dir is src
-    # run("bandit -r src")
+    run("bandit -q -c pyproject.toml -r src")
+    # TODO: suppress output on success
+    run("reuse lint")
+    # TODO: Don't run safety check for now, it's too noisy
+    # run("safety check")
 
 
 @app.command()
@@ -76,10 +88,14 @@ def clean():
         shutil.rmtree(cache_dir)
 
 
-@app.callback()
-def main():
-    """Abilian Dev Tools command-line runner."""
-    # Nothing here yet
+@app.callback(invoke_without_command=True)
+def main(ctx: typer.Context):
+    """Abilian Dev Tools command-line runner.
+
+    Helps keeping your project clean and healthy.
+    """
+    if ctx.invoked_subcommand is None:
+        ctx.get_help()
 
 
 if __name__ == "__main__":

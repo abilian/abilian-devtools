@@ -21,6 +21,10 @@ def help_make(c: Context):
 
     targets = MakefileParser().parse(makefile)
 
+    if not targets:
+        print("No documented targets found in Makefile")
+        return
+
     max_len = max(len(t[0]) for t in targets)
 
     print("Most interesting targets:\n")

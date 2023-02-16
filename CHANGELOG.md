@@ -1,4 +1,15 @@
 
+<a id='changelog-0.4.9'></a>
+# 0.4.9 — 2023-02-16
+
+## Added
+
+- `adt` with not argument will produce a help message.
+
+## Deprecated
+
+- `adt security-check` is now deprecated in favor of `adt audit`.
+
 <a id='changelog-0.4.5'></a>
 # 0.4.5 — 2023-02-13
 
