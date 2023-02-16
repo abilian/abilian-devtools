@@ -1,27 +1,17 @@
-# SPDX-FileCopyrightText: 2023 2022-2023 Abilian SAS <https://abilian.com/>
+# SPDX-FileCopyrightText: 2023 Abilian SAS <https://abilian.com/>
 #
 # SPDX-License-Identifier: MIT
 import glob
-import shlex
 import shutil
-import subprocess
-import sys
 from pathlib import Path
 
 import typer
 
-app = typer.Typer()
+from abilian_devtools.app import app, run
 
+from . import bumper
 
-def run(cmd):
-    typer.secho("> " + cmd, fg=typer.colors.GREEN)
-    args = shlex.split(cmd)
-    p = subprocess.Popen(args)
-    p.wait()
-    if p.returncode:
-        typer.secho(f"failed with error code {p.returncode}", fg="red")
-        # typer.secho(p.stderr)
-        sys.exit()
+assert bumper
 
 
 @app.command()
@@ -96,7 +86,3 @@ def main(ctx: typer.Context):
     """
     if ctx.invoked_subcommand is None:
         ctx.get_help()
-
-
-if __name__ == "__main__":
-    app()

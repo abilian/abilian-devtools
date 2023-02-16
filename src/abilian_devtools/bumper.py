@@ -1,40 +1,38 @@
-"""Version bumpers, using date-based versioning.
-
-Todo: also support semantic versionning.
+"""Version bumper.
 """
 
 import sys
 from time import gmtime, strftime
 
 import tomlkit
-from invoke import Context
 
-TASKS = ["bump_version"]
+from abilian_devtools.app import app, run
 
 
-def bump_version(c: Context, rule: str = "patch"):
+@app.command("bump-version")
+def bump_version(rule: str = "patch"):
     """Bump version in pyproject.toml, commit & apply tag.
 
     Parameter "rule" can be one of: "daily" or a parameter accepted by "poetry version".
     """
 
-    r = c.run("git diff --quiet", echo=True, warn=True)
-    if r.exited != 0:
-        print("git diff --quiet failed")
+    return_code = run("git diff --quiet", warn=True)
+    if return_code != 0:
+        print("Your repo is dirty. Please commit or stash changes first.")
         sys.exit()
 
-    update_version(c, rule)
+    update_version(rule)
     version = get_version()
-    c.run(f"git tag {version}", echo=True)
-    c.run("git add pyproject.toml", echo=True)
-    c.run(f"git commit -m 'Bump version ({version})'", echo=True)
+    run(f"git tag {version}")
+    run("git add pyproject.toml")
+    run(f"git commit -m 'Bump version ({version})'")
 
 
-def update_version(c, rule):
+def update_version(rule):
     if rule == "daily":
         update_version_daily(rule)
     else:
-        c.run(f"poetry version {rule}", echo=True)
+        run(f"poetry version {rule}")
 
 
 def update_version_daily(rule):
