@@ -1,5 +1,4 @@
-"""Version bumper.
-"""
+"""Version bumper."""
 
 import sys
 from time import gmtime, strftime
@@ -13,7 +12,8 @@ from abilian_devtools.app import app, run
 def bump_version(rule: str = "patch"):
     """Bump version in pyproject.toml, commit & apply tag.
 
-    Parameter "rule" can be one of: "daily" or a parameter accepted by "poetry version".
+    Parameter "rule" can be one of: "daily" or a parameter accepted by
+    "poetry version".
     """
 
     return_code = run("git diff --quiet", warn=True)

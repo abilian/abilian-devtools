@@ -73,9 +73,15 @@ def all():
 @app.command()
 def clean():
     """Cleanup cruft."""
-    typer.echo("Removing cache directories")
+    typer.secho(
+        "Removing Python bytecode cache directories...", fg=typer.colors.BRIGHT_MAGENTA
+    )
     for cache_dir in glob.glob("**/__pycache__", recursive=True):
         shutil.rmtree(cache_dir)
+
+    typer.secho("Removing other caches...", fg=typer.colors.BRIGHT_MAGENTA)
+    for cache_dir in [".mypy_cache", ".pytest_cache", ".ruff_cache"]:
+        shutil.rmtree(cache_dir, ignore_errors=True)
 
 
 @app.callback(invoke_without_command=True)
