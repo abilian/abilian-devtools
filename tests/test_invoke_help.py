@@ -1,6 +1,6 @@
 # flake8: noqa
 
-from abilian_devtools.invoke.help import MakefileParser
+from abilian_devtools.help import MakefileParser
 
 MAKEFILE = """\
 ## Run (dev) server
