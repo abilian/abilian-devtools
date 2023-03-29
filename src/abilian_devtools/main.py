@@ -84,7 +84,7 @@ def clean():
     typer.secho("Removing other caches...", fg=typer.colors.BRIGHT_MAGENTA)
     for cache_dir in CRUFT_DIRS:
         if Path(cache_dir).exists():
-            typer.secho(f"Removeing {cache_dir}", fg=typer.colors.YELLOW)
+            typer.secho(f"Removing {cache_dir}", fg=typer.colors.YELLOW)
             shutil.rmtree(cache_dir, ignore_errors=True)
 
 

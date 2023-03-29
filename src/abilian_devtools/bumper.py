@@ -23,9 +23,9 @@ def bump_version(rule: str = "patch"):
 
     update_version(rule)
     version = get_version()
-    run(f"git tag {version}")
     run("git add pyproject.toml")
     run(f"git commit -m 'Bump version ({version})'")
+    run(f"git tag {version}")
 
 
 def update_version(rule):
