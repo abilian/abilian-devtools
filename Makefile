@@ -104,6 +104,7 @@ update-deps:
 
 ## Publish to PyPI
 publish: clean
+	git push
 	git push --tags
 	poetry build
 	twine upload dist/*
