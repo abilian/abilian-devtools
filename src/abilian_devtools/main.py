@@ -13,6 +13,8 @@ from . import bumper
 
 assert bumper
 
+CRUFT_DIRS = [".mypy_cache", ".pytest_cache", ".ruff_cache"]
+
 
 @app.command()
 def check(args: list[str]):
@@ -80,8 +82,10 @@ def clean():
         shutil.rmtree(cache_dir)
 
     typer.secho("Removing other caches...", fg=typer.colors.BRIGHT_MAGENTA)
-    for cache_dir in [".mypy_cache", ".pytest_cache", ".ruff_cache"]:
-        shutil.rmtree(cache_dir, ignore_errors=True)
+    for cache_dir in CRUFT_DIRS:
+        if Path(cache_dir).exists():
+            typer.secho(f"Removeing {cache_dir}", fg=typer.colors.YELLOW)
+            shutil.rmtree(cache_dir, ignore_errors=True)
 
 
 @app.callback(invoke_without_command=True)
