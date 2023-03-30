@@ -22,6 +22,10 @@ You still need to properly configure and call them in your own projects.
 
 For example configuration, see, for instance, <https://github.com/abilian/nua> (`Makefile`, `pyproject.toml`, `setup.cfg`).
 
+
+CLI helper
+----------
+
 As a bonus, we're providing a CLI called `adt` which can help you get started:
 
 ```
@@ -43,9 +47,12 @@ Abilian Dev Tool command-line runner.
 │                                                      exit.                   │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ╭─ Commands ───────────────────────────────────────────────────────────────────╮
-│ all               Run everything.                                            │
+│ all               Run everything (linters and tests).                        │
+│ audit             Run security audit.                                        │
+│ bump-version      Bump version in pyproject.toml, commit & apply tag.        │
 │ check             Run checker/linters on specified files or directories.     │
-│ security-check    Run security checks.                                       │
+│ clean             Cleanup cruft.                                             │
+│ security-check    Run security checks (deprecated, use 'audit' instead).     │
 │ test              Run tests.                                                 │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ```
