@@ -19,7 +19,7 @@ def bump_version(rule: str = "patch"):
     return_code = run("git diff --quiet", warn=True)
     if return_code != 0:
         print("Your repo is dirty. Please commit or stash changes first.")
-        sys.exit()
+        sys.exit(1)
 
     update_version(rule)
     version = get_version()
