@@ -80,3 +80,6 @@ docs/_build/
 # IDE settings
 .vscode/
 .idea/
+
+# local stuff
+/sandbox/
