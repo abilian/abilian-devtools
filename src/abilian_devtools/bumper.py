@@ -15,7 +15,6 @@ def bump_version(rule: str = "patch"):
     Parameter "rule" can be one of: "daily" or a parameter accepted by
     "poetry version".
     """
-
     return_code = run("git diff --quiet", warn=True)
     if return_code != 0:
         print("Your repo is dirty. Please commit or stash changes first.")

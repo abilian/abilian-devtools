@@ -18,7 +18,6 @@ def bump_version(c: Context, rule: str = "patch"):
     Parameter "rule" can be one of: "daily" or a parameter accepted by
     "poetry version".
     """
-
     r = c.run("git diff --quiet", echo=True, warn=True)
     if r.exited != 0:
         print("git diff --quiet failed")
