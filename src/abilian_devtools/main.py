@@ -9,9 +9,11 @@ import typer
 
 from abilian_devtools.app import app, run
 
-from . import bumper
+# Import submodules to register their commands
+from . import bumper, help
 
 assert bumper
+assert help
 
 CRUFT_DIRS = [".mypy_cache", ".pytest_cache", ".ruff_cache"]
 
