@@ -4,7 +4,7 @@ Experimental: reusable invoke tasks.
 import re
 from pathlib import Path
 
-from abilian_devtools.app import app
+from .app import app
 
 
 @app.command("help-make")

@@ -5,7 +5,7 @@ from time import gmtime, strftime
 
 import tomlkit
 
-from abilian_devtools.app import app, run
+from .app import app, run
 
 
 @app.command("bump-version")
