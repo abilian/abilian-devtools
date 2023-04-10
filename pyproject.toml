@@ -173,5 +173,4 @@ categories = [
 skips = [
   "B404", # blacklist
   "B603", # subprocess_without_shell_equals_true
-
 ]
