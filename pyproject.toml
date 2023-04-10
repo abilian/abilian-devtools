@@ -78,8 +78,8 @@ ruff = "*"
 # Formatting
 isort = "*"
 black = "*"
+docformatter = "*"
 # Later:
-# docformatter = "*"
 # Typechecking
 mypy = "*"
 pyright = "*"
@@ -96,7 +96,6 @@ tomlkit = "^0.11.6"
 
 [tool.poetry.group.dev.dependencies]
 scriv = "^1.2.0"
-docformatter = "^1.5.1"
 types-invoke = "^2.0.0.1"
 snoop = "^0.4.3"
 

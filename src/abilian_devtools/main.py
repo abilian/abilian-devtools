@@ -42,7 +42,7 @@ def security_check(ctx: typer.Context):
     """Run security checks (deprecated, use 'audit' instead)."""
     typer.secho(
         "WARNING: 'security-check' is deprecated, use 'audit' instead.",
-        fg=typer.colors.RED,
+        fg=typer.colors.YELLOW,
     )
     ctx.invoke(audit)
 
