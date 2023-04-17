@@ -1,30 +1,10 @@
 """Version bumper."""
 
-import sys
 from time import gmtime, strftime
 
 import tomlkit
 
-from .app import app, run
-
-
-@app.command("bump-version")
-def bump_version(rule: str = "patch"):
-    """Bump version in pyproject.toml, commit & apply tag.
-
-    Parameter "rule" can be one of: "daily" or a parameter accepted by
-    "poetry version".
-    """
-    return_code = run("git diff --quiet", warn=True)
-    if return_code != 0:
-        print("Your repo is dirty. Please commit or stash changes first.")
-        sys.exit(1)
-
-    update_version(rule)
-    version = get_version()
-    run("git add pyproject.toml")
-    run(f"git commit -m 'Bump version ({version})'")
-    run(f"git tag {version}")
+from .shell import run
 
 
 def update_version(rule):

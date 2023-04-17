@@ -4,30 +4,29 @@ Experimental: reusable invoke tasks.
 import re
 from pathlib import Path
 
-from .app import app
+from cleez import Command
 
 
-@app.command("help-make")
-def help_make():
+class HelpMake(Command):
     """Helper to generate the `make help` message."""
-    help_make()
 
+    name = "help-make"
 
-def _help_make():
-    with Path("Makefile").open() as f:
-        makefile = f.read()
+    def run(self):
+        with Path("Makefile").open() as f:
+            makefile = f.read()
 
-    targets = MakefileParser().parse(makefile)
+        targets = MakefileParser().parse(makefile)
 
-    if not targets:
-        print("No documented targets found in Makefile")
-        return
+        if not targets:
+            print("No documented targets found in Makefile")
+            return
 
-    max_len = max(len(t[0]) for t in targets)
+        max_len = max(len(t[0]) for t in targets)
 
-    print("Documented targets:\n")
-    for targets, description in targets:
-        print(f"  {targets:<{max_len}}   {description}")
+        print("Documented targets:\n")
+        for targets, description in targets:
+            print(f"  {targets:<{max_len}}   {description}")
 
 
 class MakefileParser:

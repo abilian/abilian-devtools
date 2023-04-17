@@ -17,12 +17,11 @@ keywords = [
 ]
 
 [tool.poetry.scripts]
-adt = "abilian_devtools.main:app"
+adt = "abilian_devtools.main:main"
 
 [tool.poetry.dependencies]
 # python = ">=3.8.1,<4.0"
 python = "^3.9"
-typer = "*"
 # Git integration
 pre-commit = "*"
 # Testing
@@ -93,6 +92,7 @@ vulture = "*"
 # Invoke
 invoke = "^2.0.0"
 tomlkit = "^0.11.6"
+cleez = {git = "https://github.com/abilian/cleez"}
 
 [tool.poetry.group.dev.dependencies]
 scriv = "^1.2.0"

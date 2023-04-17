@@ -2,22 +2,45 @@
 #
 # SPDX-License-Identifier: MIT
 
-import typer
+from __future__ import annotations
 
-# Import submodules to register their commands
-from . import bumper, commands, help
-from .app import app
+import importlib.metadata
 
-assert bumper
-assert help
-assert commands
+from cleez import CLI
 
 
-@app.callback(invoke_without_command=True)
-def main(ctx: typer.Context):
+# Quick hack for now
+class MyCli(CLI):
     """Abilian Dev Tools command-line runner.
 
     Helps keeping your project clean and healthy.
     """
-    if ctx.invoked_subcommand is None:
-        ctx.get_help()
+
+    def get_version(self):
+        return importlib.metadata.version("abilian_devtools")
+
+
+def main():
+    cli = MyCli(name="adt")
+    cli.add_option(
+        "-h", "--help", default=False, action="store_true", help="Show help and exit"
+    )
+    cli.add_option(
+        "-V",
+        "--version",
+        default=False,
+        action="store_true",
+        help="Show version and exit",
+    )
+    cli.add_option(
+        "-d", "--debug", default=False, action="store_true", help="Enable debug mode"
+    )
+    cli.add_option(
+        "-v", "--verbose", default=False, action="store_true", help="Increase verbosity"
+    )
+    cli.scan("abilian_devtools.commands")
+    cli.run()
+
+
+if __name__ == "__main__":
+    main()

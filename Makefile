@@ -69,7 +69,7 @@ format:
 # Everything else
 #
 help:
-	@inv help-make
+	adt help-make
 
 install:
 	poetry install

@@ -5,19 +5,16 @@ import shlex
 import subprocess
 import sys
 
-import typer
-
-app = typer.Typer()
+from cleez.colors import dim, red
 
 
 def run(cmd, echo=True, warn=False):
     if echo:
-        typer.secho("> " + cmd, fg=typer.colors.GREEN)
+        print(dim("> " + cmd))
     args = shlex.split(cmd)
     p = subprocess.Popen(args)
     p.wait()
     if not warn and p.returncode:
-        typer.secho(f"failed with error code {p.returncode}", fg="red")
-        # typer.secho(p.stderr)
+        print(red(f"failed with error code {p.returncode}"))
         sys.exit()
     return p.returncode
