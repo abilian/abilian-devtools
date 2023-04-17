@@ -5,8 +5,7 @@ import glob
 import shutil
 from pathlib import Path
 
-import typer
-from cleez.colors import bold, dim
+from cleez.colors import bold, dim, red
 from cleez.command import Argument, Command
 
 from ..shell import run
@@ -96,8 +95,8 @@ class FormatCommand(Command):
 def check_files_exist(args):
     for arg in args:
         if not Path(arg).exists():
-            typer.secho(f"{arg} does not exist", fg=typer.colors.RED)
-            raise typer.Exit(1)
+            print(red(f"{arg} does not exist"))
+            raise SystemExit(1)
 
 
 class AuditCommand(Command):
