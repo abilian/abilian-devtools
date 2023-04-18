@@ -13,11 +13,11 @@ class HelpMake(Command):
     name = "help-make"
 
     def run(self):
-        _help_make()
+        help_make()
 
 
 # Still used by invoke help-make (deprecated)
-def _help_make():
+def help_make():
     with Path("Makefile").open() as f:
         makefile = f.read()
 

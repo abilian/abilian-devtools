@@ -2,7 +2,7 @@
 
 from invoke import Context
 
-from abilian_devtools.commands.help import _help_make
+from abilian_devtools.commands.help import help_make as _help_make
 
 TASKS = ["help", "help_make"]
 

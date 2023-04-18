@@ -5,11 +5,12 @@ tasks.
 """
 from collections.abc import Sequence
 
+from cleez.colors import bold
 from invoke import Context
 
 
 def h1(msg: str):
-    print(msg)
+    print(bold(msg))
 
 
 def run_in_subrepos(c: Context, cmd: str, sub_repos: Sequence[str] = ()):
