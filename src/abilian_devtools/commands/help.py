@@ -13,20 +13,25 @@ class HelpMake(Command):
     name = "help-make"
 
     def run(self):
-        with Path("Makefile").open() as f:
-            makefile = f.read()
+        _help_make()
 
-        targets = MakefileParser().parse(makefile)
 
-        if not targets:
-            print("No documented targets found in Makefile")
-            return
+# Still used by invoke help-make (deprecated)
+def _help_make():
+    with Path("Makefile").open() as f:
+        makefile = f.read()
 
-        max_len = max(len(t[0]) for t in targets)
+    targets = MakefileParser().parse(makefile)
 
-        print("Documented targets:\n")
-        for targets, description in targets:
-            print(f"  {targets:<{max_len}}   {description}")
+    if not targets:
+        print("No documented targets found in Makefile")
+        return
+
+    max_len = max(len(t[0]) for t in targets)
+
+    print("Documented targets:\n")
+    for targets, description in targets:
+        print(f"  {targets:<{max_len}}   {description}")
 
 
 class MakefileParser:
