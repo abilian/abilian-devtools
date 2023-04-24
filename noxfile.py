@@ -11,10 +11,15 @@ nox.options.sessions = [
 
 
 @nox.session(python=PYTHON_VERSIONS)
-def pytest(session: nox.Session):
-    session.run("make", "test")
+def lint(session: nox.Session):
+    session.install("abilian-devtools")
+    session.run("make", "lint", external=True)
 
 
 @nox.session(python=PYTHON_VERSIONS)
-def lint(session: nox.Session):
-    session.run("make", "lint")
+def pytest(session: nox.Session):
+    session.install("-e", ".")
+    session.install("pytest")
+    session.run("pip", "check")
+
+    session.run("pytest", "tests", "src")

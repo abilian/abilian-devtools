@@ -61,7 +61,7 @@ lint:
 ## Format / beautify code
 format:
 	docformatter -i -r src
-	black src
+	black src tests
 	isort src tests
 
 

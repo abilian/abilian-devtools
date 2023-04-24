@@ -1,11 +1,4 @@
-from unittest import skip
-
-import pytest
-
-from abilian_devtools.main import main
-
 # from typer.testing import CliRunner
-
 
 
 # @pytest.fixture()
