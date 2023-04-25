@@ -2,7 +2,7 @@
 .PHONY: clean clean-build clean-pyc clean-test coverage dist docs install lint lint/flake8
 
 # The package name
-PKG=pywire
+PKG=abiliabn_devtools
 
 
 all: lint
@@ -35,19 +35,12 @@ configure-git:
 ## Run python tests
 test:
 	@echo "--> Running Python tests"
-	pytest --ff -x -p no:randomly
+	pytest -x -p no:randomly
 	@echo ""
 
 test-randomly:
 	@echo "--> Running Python tests in random order"
 	pytest
-
-## Cleanup tests artifacts
-clean-test: ## remove test and coverage artifacts
-	rm -fr .tox/
-	rm -f .coverage
-	rm -fr htmlcov/
-	rm -fr .pytest_cache
 
 ## Lint / check typing
 lint:
@@ -61,8 +54,7 @@ lint:
 ## Format / beautify code
 format:
 	docformatter -i -r src
-	black src tests
-	isort src tests
+	adt format
 
 
 #
@@ -85,6 +77,7 @@ doc-pdf:
 
 ## Cleanup repository
 clean:
+	adt clean
 	rm -f **/*.pyc
 	find . -type d -empty -delete
 	rm -rf *.egg-info *.egg .coverage .eggs .cache .mypy_cache .pyre \
