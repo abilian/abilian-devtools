@@ -7,6 +7,7 @@ from __future__ import annotations
 import importlib.metadata
 
 from cleez import CLI
+from cleez.actions import VERSION
 
 
 def main():
@@ -20,8 +21,8 @@ def get_cli():
     cli.add_option(
         "-V",
         "--version",
-        default=False,
-        action="store_true",
+        action=VERSION,
+        version=cli.version,
         help="Show version and exit",
     )
     cli.add_option(
