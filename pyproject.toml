@@ -22,8 +22,11 @@ adt = "abilian_devtools.cli:main"
 [tool.poetry.dependencies]
 # python = ">=3.8.1,<4.0"
 python = "^3.9"
+cleez = "^0.1.8"
+
 # Git integration
 pre-commit = "*"
+
 # Testing
 pytest = "^7"
 pytest-cov = "^4"
@@ -32,9 +35,11 @@ pytest-xdist = "*"
 pytest-random-order = "*"
 # pytest-testmon = "^1.2.0"
 nox = "*"
+
 # Linting
+ruff = "*"
 flake8 = "^6"
-# Plugins: see https://github.com/DmytroLitvinov/awesome-flake8-extensions
+# + Plugins: see https://github.com/DmytroLitvinov/awesome-flake8-extensions
 flake8-bandit = "*"
 flake8-breakpoint = "*"
 flake8-cognitive-complexity = "*"
@@ -48,17 +53,20 @@ flake8-super = "*"
 flake8-super-call = "*"
 flake8-tidy-imports = "*"
 flake8-tuple = "*"
+
 # Removing these as they are made redundant by Ruf
 # (See: https://notes.crmarsh.com/ruff-the-first-200-releases)
 # flake8-bugbear = "*"
 # flake8-comprehensions = "*"
 # flake8-simplify = "*"
 # pep8-naming = "*"
+
 # Typing
 flake8-pep3101 = "*"
 flake8-no-pep420 = "*"
 flake8-pep585 = "*"
 flake8-pep604 = "*"
+
 # Testing
 flake8-assertive = "*"
 flake8-pytest = "*"
@@ -73,7 +81,7 @@ flake8-pytest-style = "*"
 # flake8-pie = "*"
 # dlint = "*" <- not compatible w/ flake8 6+
 # hacking = "*" <- not compatible w/ flake8 6+
-ruff = "*"
+
 # Formatting
 isort = "*"
 black = "*"
@@ -82,6 +90,7 @@ docformatter = "*"
 # Typechecking
 mypy = "*"
 pyright = "*"
+
 # Dependencies & supply chain
 deptry = "*"
 pip = "*"
@@ -89,10 +98,10 @@ pip-audit = "*"
 reuse = "*"
 safety = "*"
 vulture = "*"
+
 # Invoke
 invoke = "^2.0.0"
 tomlkit = "^0.11.6"
-cleez = "^0.1.7"
 
 [tool.poetry.group.dev.dependencies]
 scriv = "^1.2.0"
