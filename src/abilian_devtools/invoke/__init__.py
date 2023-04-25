@@ -2,7 +2,7 @@
 Experimental: reusable invoke tasks.
 """
 from collections.abc import Sequence
-from typing import Any
+from typing import Any, Optional
 
 from invoke import task
 
@@ -11,7 +11,7 @@ from . import help, versions
 MODULES = [help, versions]
 
 
-def import_tasks(namespace: dict[str, Any], modules: Sequence[str] | None = None):
+def import_tasks(namespace: dict[str, Any], modules: Optional[Sequence[str]] = None):
     """Import tasks from other modules."""
     if modules is None:
         _modules = MODULES

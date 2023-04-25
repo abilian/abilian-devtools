@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: MIT
 
+from typing import Optional
+
 from cleez.colors import bold
 from cleez.command import Argument, Command
 
@@ -18,7 +20,7 @@ class TestCommand(Command):
         Argument("args", nargs="?", help="Files or directories to test"),
     ]
 
-    def run(self, args: list[str] = None):
+    def run(self, args: Optional[list[str]] = None):
         print(bold("Running tests..."))
         if not args:
             args = ["src", "tests"]
