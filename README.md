@@ -103,6 +103,4 @@ Discussion
 References
 ----------
 
-This presentation was given in 2017. Many tools have evolved or appeared since then, but the general principles are still valid:
-
-<script defer class="speakerdeck-embed" data-id="4870dab3cff942ef81c3359f746b2d7e" data-ratio="1.77777777777778" src="//speakerdeck.com/assets/embed.js"></script>
+[This presentation](https://speakerdeck.com/sfermigier/python-quality-engineering-a-tour-of-best-practices) was given in 2017 at the Paris Open Source Summit (POSS). Many tools have evolved or appeared since then, but the general principles are still valid:
