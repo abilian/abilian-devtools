@@ -1,7 +1,9 @@
 Abilian Development Tools (`abilian-devtools` or `adt`)
 =======================================================
 
-Abilian Development Tools (ADT) is a curated collection of Python development tools that includes formatters, testing frameworks, style checkers, type checkers, and supply chain audit tools. By adding `abilian-devtools = '*'` to your project's `requirements.in` or `pyproject.toml`, you can access over 40+ curated projects and plugins. Proper configuration and usage in your project is still required. Additionally, the package provides a command-line interface (CLI) called adt to help users get started with various development tasks such as running tests, security audits, and code formatting.
+Abilian Development Tools (ADT) is a curated collection of Python development tools that includes formatters, testing frameworks, style checkers, type checkers, and supply chain audit tools. By adding `abilian-devtools = '*'` to your project's `requirements.in` or `pyproject.toml`, you can access over 40+ curated projects and plugins.
+Proper configuration and usage in your project is still required.
+Additionally, the package provides a command-line interface (CLI) called adt to help users get started with various development tasks such as running tests, security audits, and code formatting.
 
 
 What this is?
@@ -35,7 +37,7 @@ As a bonus, we're providing a CLI called `adt` which can help you get started:
 
 ```
 $ adt
-adt (0.5.1)
+adt (0.5.2)
 
 Usage:
   adt <command> [options] [arguments]
@@ -68,11 +70,12 @@ Here are some of the reasons why we have created this project:
 
 - **Consistency**: By using a curated set of best-of-breed tools, our team can achieve a consistent level of code quality, style, and security across their projects.
 
-- **Simplified Dependency Management**: Instead of managing individual dependencies for each tool, developers only need to add abilian-devtools to their project's requirements.in or pyproject.toml. This makes it easier to maintain and update dependencies over time.
+- **Simplified Dependency Management**: Instead of managing individual dependencies for each tool, developers only need to add abilian-devtools to their project's `requirements.in` or `pyproject.toml`. This makes it easier to maintain and update dependencies over time.
 
-- **Easy-to-use CLI**: The adt command-line interface simplifies common development tasks such as running tests, code formatting, and security audits. This can save time and effort, especially for those new to these tools.
+- **Easy-to-use CLI**: The `adt` command-line utility simplifies common development tasks such as running tests, code formatting, and security audits. This can save time and effort, especially for those new to these tools.
 
 - **Up-to-date Toolset**: Abilian Devtools aims to provide an up-to-date collection of tools, ensuring that developers have access to the latest features and improvements without having to manually track and update each tool.
+
 
 Roadmap
 -------
@@ -80,8 +83,19 @@ Roadmap
 Here are some ideas for future improvements:
 
 - **Support for additional tools**: for instance, tools that deal with changelogs (via [Conventional Commits](https://www.conventionalcommits.org/)), versioning, documentation...
+
 - **Monorepo support**: Better support for monorepos.
+
 - **Customization**: The curated nature of Abilian Devtools means that it comes with a predefined set of tools. Your project may require additional or alternative tools, or different settings. ADT could help managing (and updating) settings according to your own tastes and needs.
+
 - **Generating configuration and supporting files**: Currently our projects are generated from a template by third-party tools ([Cruft](https://pypi.org/project/cruft/) or [Cookiecutter](https://pypi.org/project/cookiecutter/), using [this template](https://github.com/abilian/cookiecutter-abilian-python)). ADT could help generating configuration files for the various tools (`pyproject.toml`, `setup.cfg`, `noxfile.py`, `Makefile`, `tasks.py`...).
-- **Updating configuration and supporting files**: As tools and best practices evolves, and for long-running projects, configuration need to be adapted over time, which can become quite time-consuming, specially when you are working on many small projects (or monorepos). Tools like [Cruft](https://pypi.org/project/cruft/ or [Medikit](https://python-medikit.github.io/)) can help, but in our experience are too fragile. ADT could help with this.
+
+- **Updating configuration and supporting files**: As tools and best practices evolves, and for long-running projects, configuration need to be adapted over time, which can become quite time-consuming, specially when you are working on many small projects (or monorepos). Tools like [Cruft](https://pypi.org/project/cruft/) or [Medikit](https://python-medikit.github.io/)) can help, but in our experience are too fragile. ADT could help with this.
+
 - **CI/CD**: ADT could help with CI/CD integration.
+
+Discussion
+----------
+
+- [On GitHub](https://github.com/abilian/abilian-devtools/discussions) (evergreen)
+- [On Reddit](https://www.reddit.com/r/Python/comments/136d7yd/abilian_development_tools_a_curated_collection_of/) (May 2023)
