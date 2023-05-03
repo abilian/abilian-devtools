@@ -22,14 +22,14 @@ adt = "abilian_devtools.cli:main"
 [tool.poetry.dependencies]
 # python = ">=3.8.1,<4.0"
 python = "^3.9"
-cleez = "^0.1.8"
+cleez = "^0.1.11"
 
 # Git integration
 pre-commit = "*"
 
 # Testing
-pytest = "^7"
-pytest-cov = "^4"
+pytest = "^7.3.1"
+pytest-cov = "^4.0.0"
 profilehooks = "*"
 pytest-xdist = "*"
 pytest-random-order = "*"
@@ -38,7 +38,7 @@ nox = "*"
 
 # Linting
 ruff = "*"
-flake8 = "^6"
+flake8 = "^6.0.0"
 # + Plugins: see https://github.com/DmytroLitvinov/awesome-flake8-extensions
 flake8-bandit = "*"
 flake8-breakpoint = "*"
@@ -100,12 +100,12 @@ safety = "*"
 vulture = "*"
 
 # Invoke
-invoke = "^2.0.0"
-tomlkit = "^0.11.6"
+invoke = "^2.1.1"
+tomlkit = "^0.11.8"
 
 [tool.poetry.group.dev.dependencies]
-scriv = "^1.2.0"
-types-invoke = "^2.0.0.1"
+scriv = "^1.3.1"
+types-invoke = "^2.0.0.6"
 snoop = "^0.4.3"
 
 [build-system]
