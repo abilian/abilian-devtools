@@ -4,6 +4,7 @@ Abilian Development Tools (`abilian-devtools` or `adt`)
 Abilian Development Tools (ADT) is a curated collection of Python development tools that includes formatters, testing frameworks, style checkers, type checkers, and supply chain audit tools. By adding `abilian-devtools = '*'` to your project's `requirements.in` or `pyproject.toml`, you can access over 40+ curated projects and plugins.
 Proper configuration and usage in your project is still required.
 Additionally, the package provides a command-line interface (CLI) called adt to help users get started with various development tasks such as running tests, security audits, and code formatting.
+ADT was developped at [Abilian](https://abilian.com/) as a tool to help manage dozens of Python projects (open source or not). We hope it can be useful to others too.
 
 
 What this is?
@@ -18,6 +19,7 @@ This is a curated, and opiniated, collection of best-of-breed Python development
 - Supply chain audit (`pip-audit`, `safety`, `reuse`, `vulture`, `deptry`)
 - And more.
 
+Obviously, all the credit goes to the creators and maintainers of these wonderful projects. You have all our gratitude!
 
 
 Usage
@@ -62,7 +64,7 @@ Available commands:
 Why this?
 ---------
 
-We have created Abilian DevTools to help us maintain our own projects, and we thought it could be useful to others.
+[We](https://abilian.com/) have created Abilian DevTools to help us maintain [our own projects](https://github.com/abilian/), and we thought it could be useful to others.
 
 Here are some of the reasons why we have created this project:
 
@@ -99,8 +101,11 @@ Discussion
 
 - [On GitHub](https://github.com/abilian/abilian-devtools/discussions) (evergreen)
 - [On Reddit](https://www.reddit.com/r/Python/comments/136d7yd/abilian_development_tools_a_curated_collection_of/) (May 2023)
+- [On AFPY Forum](https://discuss.afpy.org/t/abilian-development-tools-est-une-collection-doutils-de-developpement-python-qui-comprend-des-formateurs-des-frameworks-de-tests-des-verificateurs-de-style-des-verificateurs-de-type-et-des-outils-daudit-de-la-chaine-dapprovisionnement-logicielle/1548) (May 2023, in French)
 
 References
 ----------
 
-[This presentation](https://speakerdeck.com/sfermigier/python-quality-engineering-a-tour-of-best-practices) was given in 2017 at the Paris Open Source Summit (POSS). Many tools have evolved or appeared since then, but the general principles are still valid.
+[This presentation from 2017](https://speakerdeck.com/sfermigier/python-quality-engineering-a-tour-of-best-practices) was given at the Paris Open Source Summit (POSS). Many tools have evolved or appeared since then, but the general principles are still valid.
+
+[This presentation from 2005](https://speakerdeck.com/sfermigier/python-best-practices-rmll-2005) was given (in French) at the "Rencontres Mondiales du Logiciel Libre" in Bordeaux. It's obviously outdated, but kept for nostalgic reasons ;)
