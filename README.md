@@ -105,4 +105,4 @@ References
 
 This presentation was given in 2017. Many tools have evolved or appeared since then, but the general principles are still valid:
 
-<iframe class="speakerdeck-iframe" style="border: 0px none; background: rgba(0, 0, 0, 0.1) padding-box; margin: 0px; padding: 0px; border-radius: 6px; box-shadow: rgba(0, 0, 0, 0.2) 0px 5px 40px; width: 100%; height: auto; aspect-ratio: 560 / 314;" src="https://speakerdeck.com/player/4870dab3cff942ef81c3359f746b2d7e" title="Python quality engineering - A tour of best practices" allowfullscreen="true" data-ratio="1.78343949044586" frameborder="0"></iframe>
+<script defer class="speakerdeck-embed" data-id="4870dab3cff942ef81c3359f746b2d7e" data-ratio="1.77777777777778" src="//speakerdeck.com/assets/embed.js"></script>
