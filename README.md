@@ -103,4 +103,4 @@ Discussion
 References
 ----------
 
-[This presentation](https://speakerdeck.com/sfermigier/python-quality-engineering-a-tour-of-best-practices) was given in 2017 at the Paris Open Source Summit (POSS). Many tools have evolved or appeared since then, but the general principles are still valid:
+[This presentation](https://speakerdeck.com/sfermigier/python-quality-engineering-a-tour-of-best-practices) was given in 2017 at the Paris Open Source Summit (POSS). Many tools have evolved or appeared since then, but the general principles are still valid.
