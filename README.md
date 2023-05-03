@@ -99,3 +99,10 @@ Discussion
 
 - [On GitHub](https://github.com/abilian/abilian-devtools/discussions) (evergreen)
 - [On Reddit](https://www.reddit.com/r/Python/comments/136d7yd/abilian_development_tools_a_curated_collection_of/) (May 2023)
+
+References
+----------
+
+This presentation was given in 2017. Many tools have evolved or appeared since then, but the general principles are still valid:
+
+<iframe class="speakerdeck-iframe" style="border: 0px none; background: rgba(0, 0, 0, 0.1) padding-box; margin: 0px; padding: 0px; border-radius: 6px; box-shadow: rgba(0, 0, 0, 0.2) 0px 5px 40px; width: 100%; height: auto; aspect-ratio: 560 / 314;" src="https://speakerdeck.com/player/4870dab3cff942ef81c3359f746b2d7e" title="Python quality engineering - A tour of best practices" allowfullscreen="true" data-ratio="1.78343949044586" frameborder="0"></iframe>
