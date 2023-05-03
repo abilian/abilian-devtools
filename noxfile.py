@@ -12,7 +12,7 @@ nox.options.sessions = [
 
 @nox.session(python=PYTHON_VERSIONS)
 def lint(session: nox.Session):
-    session.install("abilian-devtools")
+    session.install("-e", ".")
     session.run("make", "lint", external=True)
 
 
