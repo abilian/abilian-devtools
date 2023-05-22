@@ -42,6 +42,7 @@ def update_version(rule):
 
 
 def update_version_daily():
+    # NB: we're using tomkit for its roundtrip feature.
     pyproject_d = tomlkit.parse(open("pyproject.toml").read())
     version: str = pyproject_d["tool"]["poetry"]["version"]  # type: ignore
     serial = int(version.split(".")[-1])

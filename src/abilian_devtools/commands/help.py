@@ -1,6 +1,4 @@
-"""
-Experimental: reusable invoke tasks.
-"""
+"""Experimental: reusable invoke tasks."""
 import re
 from pathlib import Path
 
