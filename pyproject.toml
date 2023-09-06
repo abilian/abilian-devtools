@@ -96,8 +96,9 @@ deptry = "*"
 pip = "*"
 pip-audit = "*"
 reuse = "*"
-safety = "*"
 vulture = "*"
+# Safety seems unmaintained and wants packaging<=23
+# safety = "*"
 
 # Invoke
 invoke = "^2.1.1"
@@ -161,7 +162,7 @@ ignore_obsolete = [
   "pytest-xdist",
   "reuse",
   "ruff",
-  "safety",
+  # "safety",
   "vulture",
 ]
 
