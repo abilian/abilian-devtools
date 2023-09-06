@@ -101,3 +101,11 @@ publish: clean
 	git push --tags
 	poetry build
 	twine upload dist/*
+
+## Tag release and publish
+release: clean
+	adt bump-version
+	git push
+	git push --tags
+	poetry build
+	twine upload dist/*
