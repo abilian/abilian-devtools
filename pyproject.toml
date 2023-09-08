@@ -11,9 +11,8 @@ keywords = [
   "qa",
   "testing",
   "linting",
-  "typechecking",
   "security",
-  "supply chain"
+  "supply_chain"
 ]
 
 [tool.poetry.scripts]

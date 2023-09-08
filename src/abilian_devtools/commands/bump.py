@@ -18,7 +18,12 @@ class BumpVersionCommand(Command):
     help = "Bump version in pyproject.toml, commit & apply tag."
 
     arguments = [
-        Argument("rule", nargs="?", default="patch", help="Bump rule"),
+        Argument(
+            "rule",
+            nargs="?",
+            default="patch",
+            help="Bump rule (patch, minor, major, daily)",
+        ),
     ]
 
     def run(self, rule: str = "patch"):
