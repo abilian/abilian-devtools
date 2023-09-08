@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "abilian-devtools"
-version = "0.5.8"
+version = "0.5.9"
 description = "A curated set of dependencies for quality software development"
 authors = ["Stefane Fermigier <sf@abilian.com>"]
 license = "MIT"
