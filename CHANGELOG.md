@@ -2,11 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
-## [unreleased]
+## [0.5.11] - 2023-10-04
 
 ### Documentation
 
 - Add cliff config
+- Update changelog
 
 ## [0.5.8] - 2023-09-08
 
