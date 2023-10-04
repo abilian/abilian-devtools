@@ -91,13 +91,14 @@ mypy = "*"
 pyright = "*"
 
 # Dependencies & supply chain
-deptry = "*"
 pip = "*"
 pip-audit = "*"
 reuse = "*"
 vulture = "*"
 # Safety seems unmaintained and wants packaging<=23
 # safety = "*"
+# Deptry doesn't like Python 3.12
+# deptry = "*"
 
 # Invoke
 invoke = "^2.1.1"
