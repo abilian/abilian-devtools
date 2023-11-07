@@ -28,8 +28,8 @@ def help_make():
     max_len = max(len(t[0]) for t in targets)
 
     print("Documented targets:\n")
-    for targets, description in targets:
-        print(f"  {targets:<{max_len}}   {description}")
+    for target, description in targets:
+        print(f"  {target:<{max_len}}   {description}")
 
 
 class MakefileParser:

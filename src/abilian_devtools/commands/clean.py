@@ -1,7 +1,6 @@
 # SPDX-FileCopyrightText: 2023 Abilian SAS <https://abilian.com/>
 #
 # SPDX-License-Identifier: MIT
-import glob
 import shutil
 from pathlib import Path
 
@@ -18,7 +17,7 @@ class CleanCommand(Command):
 
     def run(self):
         print(bold("Removing Python bytecode cache directories..."))
-        for cache_dir in glob.glob("**/__pycache__", recursive=True):
+        for cache_dir in Path().rglob("**/__pycache__"):
             shutil.rmtree(cache_dir)
 
         print(bold("Removing other caches..."))

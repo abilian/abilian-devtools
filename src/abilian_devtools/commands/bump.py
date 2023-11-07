@@ -1,4 +1,5 @@
 import sys
+from pathlib import Path
 from time import gmtime, strftime
 
 import tomlkit
@@ -48,7 +49,7 @@ def update_version(rule):
 
 def update_version_daily():
     # NB: we're using tomkit for its roundtrip feature.
-    pyproject_d = tomlkit.parse(open("pyproject.toml").read())
+    pyproject_d = tomlkit.parse(Path("pyproject.toml").read_text())
     version: str = pyproject_d["tool"]["poetry"]["version"]  # type: ignore
     serial = int(version.split(".")[-1])
     date = version[: -len(str(serial)) - 1]
@@ -62,11 +63,10 @@ def update_version_daily():
     new_version = f"{new_date}.{serial}"
     print("New version: ", new_version)
     pyproject_d["tool"]["poetry"]["version"] = new_version  # type: ignore
-    with open("pyproject.toml", "w") as f:
-        f.write(tomlkit.dumps(pyproject_d))
+    Path("pyproject.toml").write_text(tomlkit.dumps(pyproject_d))
 
 
 def get_version():
-    d = tomlkit.parse(open("pyproject.toml").read())
+    d = tomlkit.parse(Path("pyproject.toml").read_text())
     version: str = d["tool"]["poetry"]["version"]  # type: ignore
     return version
