@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [unreleased]
+
+### Features
+
+- Add `cruft` command.
+
 ## [0.5.11] - 2023-10-04
 
 ### Documentation
@@ -104,8 +110,24 @@ All notable changes to this project will be documented in this file.
 
 ### Bug Fixes
 
-- Properly call deptry and vulture.
 - Makefile parsing issue.
+
+### Features
+
+- Inport tasks selectively.
+- Command "adt bump-version"
+
+## [0.4.5] - 2023-02-13
+
+### Features
+
+- Experimental support for Invoke tasks.
+
+## [0.4.4] - 2023-02-01
+
+### Bug Fixes
+
+- Properly call deptry and vulture.
 
 ### Documentation
 
@@ -122,9 +144,6 @@ All notable changes to this project will be documented in this file.
 - More checks in the CLI.
 - Add "check-security" target for CLI
 - Adding "adt clean" command.
-- Experimental support for Invoke tasks.
-- Inport tasks selectively.
-- Command "adt bump-version"
 
 ### Refactor
 

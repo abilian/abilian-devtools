@@ -39,7 +39,7 @@ As a bonus, we're providing a CLI called `adt` which can help you get started:
 
 ```
 $ adt
-adt (0.5.2)
+adt (0.5.x)
 
 Usage:
   adt <command> [options] [arguments]
@@ -55,6 +55,7 @@ Available commands:
   bump-version  Bump version in pyproject.toml, commit & apply tag.
   check         Run checker/linters on specified files or directories.
   clean         Cleanup cruft.
+  cruft         Run cruft audit.
   format        Format code in specified files or directories.
   help-make     Helper to generate the `make help` message.
   test          Run tests.
