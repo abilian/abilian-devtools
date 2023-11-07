@@ -10,6 +10,7 @@ from cleez.command import Command
 STD_FILES = [
     ".git/",
     ".gitignore",
+    ".pre-commit-config.yaml",
     "Makefile",
     "README.md",
     # noxfile.py (or tox.ini)
@@ -32,12 +33,16 @@ class CruftCommand(Command):
 
     def check_standard_files(self):
         """Check standard files ("cruft") are present."""
+        success = True
 
         for std_file in STD_FILES:
             if not Path(std_file).exists():
                 print(f"Missing standard file: {std_file}")
-                sys.exit(1)
+                success = False
 
         if not Path("tox.init").exists() and not Path("noxfile.py").exists():
             print("Missing tox.ini or noxfile.py")
+            success = False
+
+        if not success:
             sys.exit(1)
