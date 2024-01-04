@@ -53,7 +53,7 @@ flake8-super-call = "*"
 flake8-tidy-imports = "*"
 flake8-tuple = "*"
 
-# Removing these as they are made redundant by Ruf
+# Removing these as they are made redundant by Ruff
 # (See: https://notes.crmarsh.com/ruff-the-first-200-releases)
 # flake8-bugbear = "*"
 # flake8-comprehensions = "*"
