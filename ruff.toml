@@ -74,5 +74,6 @@ ignore = [
     "ERA001", # [*] Found commented-out code
     "RUF012", # Mutable class attributes should be annotated with `typing.ClassVar`
     "S603", # Using subprocess
+    "S404", # Same
     "T201", # `print` found
 ]
