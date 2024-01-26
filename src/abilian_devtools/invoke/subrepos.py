@@ -3,6 +3,7 @@
 Should be used at a higher level, e.g. for constructing "subrepos"
 tasks.
 """
+
 from collections.abc import Sequence
 
 from cleez.colors import bold
