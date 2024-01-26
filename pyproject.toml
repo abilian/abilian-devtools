@@ -31,7 +31,7 @@ pytest = "^7.4.4"
 pytest-cov = "^4.1.0"
 profilehooks = "^1.12.0"
 pytest-xdist = "^3.5.0"
-pytest-random-order = "^1.1.0"
+pytest-random-order = "^1.1.1"
 # pytest-testmon = "^1.2.0"
 nox = "^2023.4.22"
 
@@ -83,18 +83,18 @@ flake8-pytest-style = "^1.7.2"
 
 # Formatting
 isort = "^5.13.2"
-black = "^23.12.1"
+black = "^24.1.0"
 docformatter = "^1.7.5"
 # Later:
 # Typechecking
 mypy = "^1.8.0"
-pyright = "^1.1.345"
+pyright = "^1.1.348"
 
 # Dependencies & supply chain
 pip = "^23.3.2"
-pip-audit = "^2.6.3"
-reuse = "^2.1.0"
-vulture = "^2.10"
+pip-audit = "^2.7.0"
+reuse = "^3.0.1"
+vulture = "^2.11"
 # Safety seems unmaintained and wants packaging<=23
 # safety = "*"
 # Deptry doesn't like Python 3.12
