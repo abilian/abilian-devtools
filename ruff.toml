@@ -3,7 +3,7 @@ preview = true
 exclude = [
 ]
 
-select = [
+lint.select = [
     "F", # Pyflakes
     "E", # pycodestyle
     "W", # pycodestyle
@@ -64,7 +64,7 @@ select = [
     "RUF", # Ruff-specific rules
 ]
 
-ignore = [
+lint.ignore = [
     "A001", # Variable `...` is shadowing a python builtin
     "A002", # Argument `...` is shadowing a python builtin
     "A003", # Class attribute `...` is shadowing a python builtin
