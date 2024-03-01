@@ -31,9 +31,9 @@ class CheckCommand(Command):
 
         # Todo: more cases
         if Path("etc").joinpath("ruff.toml").exists():
-            run(f"ruff lint -c etc/ruff.toml {args_str}")
+            run(f"ruff check -c etc/ruff.toml {args_str}")
         else:
-            run(f"ruff {args_str}")
+            run(f"ruff check {args_str}")
 
         run(f"flake8 {args_str}")
         run(f"mypy --show-error-codes {args_str}")
