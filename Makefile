@@ -94,6 +94,8 @@ tidy: clean
 update-deps:
 	pip install -U pip setuptools wheel
 	poetry update
+	poetry show -o
+	pre-commit autoupdate
 
 ## Publish to PyPI
 publish: clean
