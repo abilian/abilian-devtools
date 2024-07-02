@@ -1,3 +1,7 @@
+# Secrets / local config
+.envrc
+
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
