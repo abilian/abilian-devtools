@@ -92,8 +92,9 @@ pyright = "^1.1.348"
 # Dependencies & supply chain
 pip = ">=23"
 pip-audit = "^2.7.0"
-reuse = "^3.0.1"
+reuse = "^4"
 vulture = "^2.11"
+
 # Safety seems unmaintained and wants packaging<=23
 # safety = "*"
 # Deptry doesn't like Python 3.12
@@ -104,6 +105,7 @@ invoke = "^2.2.0"
 
 # We're using tomkit for its roundtrip feature.
 tomlkit = "^0.12.1"
+deptry = "^0.16.1"
 
 [tool.poetry.group.dev.dependencies]
 scriv = "^1.5.1"
@@ -116,9 +118,9 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.deptry]
 exclude = [".nox", ".tox", "tests", "noxfile.py"]
-ignore_missing = []
-ignore_transitive = []
-ignore_obsolete = [
+
+[tool.deptry.per_rule_ignores]
+DEP002 = [
   "black",
   "deptry",
   "docformatter",

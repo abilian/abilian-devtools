@@ -2,7 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
-## [unreleased]
+## [0.5.16] - 2024-02-01
+
+### Features
+
+- Relax dependency on pytest
+
+## [0.5.13] - 2023-11-07
+
+### Features
+
+- More cruft file to check.
+
+## [0.5.12] - 2023-11-07
+
+### Documentation
+
+- Update docs.
 
 ### Features
 
