@@ -72,8 +72,9 @@ lint.ignore = [
     "TID252", # Relative imports from parent modules are banned
     # Fixable?
     "ERA001", # [*] Found commented-out code
+    "PLW1514", # `pathlib.Path(...).open` in text mode without explicit `encoding` argument
     "RUF012", # Mutable class attributes should be annotated with `typing.ClassVar`
-    "S603", # Using subprocess
     "S404", # Same
+    "S603", # Using subprocess
     "T201", # `print` found
 ]
