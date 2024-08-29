@@ -1,6 +1,7 @@
 preview = true
 
 exclude = [
+    "src/abilian_devtools/etc",
 ]
 
 lint.select = [
@@ -68,6 +69,7 @@ lint.ignore = [
     "A001", # Variable `...` is shadowing a python builtin
     "A002", # Argument `...` is shadowing a python builtin
     "A003", # Class attribute `...` is shadowing a python builtin
+    "A004", # Import `...` is shadowing a Python builtin
     "PLR6301",
     "TID252", # Relative imports from parent modules are banned
     # Fixable?
