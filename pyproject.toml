@@ -98,7 +98,7 @@ pip = ">=23"
 pip-audit = "^2.7.0"
 reuse = "^4"
 vulture = "^2.11"
-deptry = "^0.18"
+deptry = ">=0.20"
 
 # Safety seems unmaintained and wants packaging<=23
 # safety = "*"
