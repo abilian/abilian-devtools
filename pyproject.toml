@@ -1,3 +1,7 @@
+[project]
+name = "abilian-devtools"
+requires-python = ">=3.9"
+
 [tool.poetry]
 name = "abilian-devtools"
 version = "0.6.4"
@@ -19,19 +23,18 @@ keywords = [
 adt = "abilian_devtools.cli:main"
 
 [tool.poetry.dependencies]
-# python = ">=3.8.1,<4.0"
 python = "^3.9"
 cleez = "^0.1.11"
 
 # Git integration
-pre-commit = "^3.6.0"
+pre-commit = "^4"
 
 # Testing
 pytest = "^8"
 pytest-cov = "^5"
-profilehooks = "^1.12.0"
-pytest-xdist = "^3.5.0"
-pytest-random-order = "^1.1.1"
+profilehooks = "^1"
+pytest-xdist = "^3"
+pytest-random-order = "^1"
 nox = ">=2023"
 
 # Linting
@@ -114,7 +117,7 @@ tomlkit = ">=0.12"
 [tool.poetry.group.dev.dependencies]
 scriv = "^1.5.1"
 types-invoke = "^2.0.0.10"
-snoop = "^0.4.3"
+snoop = "^0.6"
 devtools = "^0.12.2"
 docformatter = "^1.7.5"
 
