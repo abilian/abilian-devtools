@@ -23,7 +23,7 @@ class CheckCommand(Command):
     def run(self, args: Optional[list[str]] = None):
         print(bold("Running checks..."))
         if not args:
-            args = ["src", "tests"]
+            args = self._get_targets()
 
         check_files_exist(args)
 
@@ -41,3 +41,11 @@ class CheckCommand(Command):
         run(f"vulture --min-confidence 80 {args_str}")
         # TODO: currently broken
         # run("deptry .")
+
+    def _get_targets(self):
+        args = []
+        if Path("src").exists():
+            args.append("src")
+        if Path("tests").exists():
+            args.append("tests")
+        return args
