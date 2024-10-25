@@ -41,7 +41,7 @@ test-randomly:
 
 ## Lint / check typing
 lint:
-	adt check src tests
+	adt check
 
 
 #

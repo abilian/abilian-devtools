@@ -8,7 +8,7 @@ from cleez.colors import bold
 from cleez.command import Argument, Command
 
 from ..shell import run
-from ._util import check_files_exist
+from ._util import get_targets
 
 
 class FormatCommand(Command):
@@ -22,11 +22,8 @@ class FormatCommand(Command):
 
     def run(self, args: Optional[list[str]] = None):
         print(bold("Formatting code..."))
-        if not args:
-            args = ["src", "tests"]
 
-        check_files_exist(args)
-
+        args = get_targets(args)
         args_str = " ".join(args)
 
         run(f"black {args_str}")
