@@ -76,6 +76,7 @@ lint.ignore = [
     "ERA001", # [*] Found commented-out code
     "PLW1514", # `pathlib.Path(...).open` in text mode without explicit `encoding` argument
     "RUF012", # Mutable class attributes should be annotated with `typing.ClassVar`
+    "RET504", # Unnecessary assignment before return
     "S404", # Same
     "S603", # Using subprocess
     "T201", # `print` found
