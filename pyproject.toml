@@ -1,6 +1,6 @@
 [project]
 name = "abilian-devtools"
-version = "0.6.8"
+version = "0.7.0"
 description = "A curated set of dependencies for quality software development"
 readme = "README.md"
 requires-python = ">=3.10,<4.0"
