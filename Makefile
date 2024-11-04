@@ -98,13 +98,10 @@ update-deps:
 publish: clean
 	git push
 	git push --tags
-	poetry build
+	uv build
 	twine upload dist/*
 
 ## Tag release and publish
 release: clean
 	adt bump-version
-	git push
-	git push --tags
-	poetry build
-	twine upload dist/*
+	@make publish
