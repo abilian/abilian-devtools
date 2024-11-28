@@ -48,7 +48,6 @@ dependencies = [
     "isort>=5.13.2",
     "mypy>=1.8.0",
     "nox>=2023",
-    "pip-audit>=2.7.0",
     "pip>=23",
     "pre-commit>=4",
     "profilehooks>=1",
@@ -61,6 +60,8 @@ dependencies = [
     "ruff>=0.5.1",
     "tomlkit>=0.12",
     "vulture>=2.11",
+    # Removed because not actively maintained
+    # "pip-audit>=2.7.0",
 ]
 
 [project.urls]
