@@ -43,7 +43,6 @@ dependencies = [
     "flake8-tidy-imports>=4.10.0",
     "flake8-tuple>=0.4.1",
     "flake8>=7.0.0",
-    "git-cliff",
     "invoke>=2.2.0",
     "isort>=5.13.2",
     "mypy>=1.8.0",
@@ -60,8 +59,10 @@ dependencies = [
     "ruff>=0.5.1",
     "tomlkit>=0.12",
     "vulture>=2.11",
-    # Removed because not actively maintained
+    # Removed because not actively maintained:
     # "pip-audit>=2.7.0",
+    # Breaks on alpine:
+    # "git-cliff",
 ]
 
 [project.urls]
