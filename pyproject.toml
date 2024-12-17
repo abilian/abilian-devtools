@@ -77,11 +77,12 @@ build-backend = "hatchling.build"
 
 [tool.uv]
 dev-dependencies = [
-    "scriv>=1.5.1",
-    "types-invoke>=2.0.0.10",
-    "snoop>=0.6",
     "devtools>=0.12.2",
     "docformatter>=1.7.5",
+    "scriv>=1.5.1",
+    "snoop>=0.6",
+    "twine>=6.0.1",
+    "types-invoke>=2.0.0.10",
 ]
 
 [tool.deptry]
@@ -151,8 +152,6 @@ categories = [
   "Security",
   "Doc",
 ]
-
-[tool.pyright]
 
 [tool.bandit]
 skips = [
