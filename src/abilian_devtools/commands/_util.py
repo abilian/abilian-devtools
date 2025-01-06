@@ -6,7 +6,7 @@ from pathlib import Path
 from cleez.colors import red
 
 
-def get_targets(args: None | list[str]) -> list[str]:
+def get_targets(args: list[str] | None) -> list[str]:
     if args:
         _check_files_exist(args)
         return args
