@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: MIT
 import inspect
 from pathlib import Path
-from typing import Optional
 
 from cleez.colors import bold
 from cleez.command import Command
@@ -19,7 +18,7 @@ class SeedCommand(Command):
 
     name = "seed"
 
-    def run(self, args: Optional[list[str]] = None):
+    def run(self, args: list[str] | None = None):
         print(bold("Seeding project..."))
 
         etc_root = get_package_root("abilian_devtools") / "etc"
