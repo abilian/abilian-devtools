@@ -1,5 +1,3 @@
-# flake8: noqa
-
 from abilian_devtools.commands.help import MakefileParser
 
 MAKEFILE = """\

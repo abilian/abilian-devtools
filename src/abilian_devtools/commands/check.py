@@ -31,9 +31,6 @@ class CheckCommand(Command):
         else:
             run(f"ruff check {args_str}")
 
-        run(f"flake8 {args_str}")
-        run(f"mypy --show-error-codes {args_str}")
-        run("pyright")
         run(f"vulture --min-confidence 80 {args_str}")
         # TODO: currently broken
         # run("deptry .")

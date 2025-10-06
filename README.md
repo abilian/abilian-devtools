@@ -2,8 +2,11 @@ Abilian Development Tools (`abilian-devtools` or `adt`)
 =======================================================
 
 Abilian Development Tools (ADT) is a curated collection of Python development tools that includes formatters, testing frameworks, style checkers, type checkers, and supply chain audit tools. By adding `abilian-devtools = '*'` to your project's `requirements.in` or `pyproject.toml`, you can access over 40+ curated projects and plugins.
+
 Proper configuration and usage in your project is still required.
+
 Additionally, the package provides a command-line interface (CLI) called adt to help users get started with various development tasks such as running tests, security audits, and code formatting.
+
 ADT was developped at [Abilian](https://abilian.com/) as a tool to help manage dozens of Python projects (open source or not). We hope it can be useful to others too.
 
 
