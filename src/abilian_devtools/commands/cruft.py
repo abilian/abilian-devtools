@@ -14,11 +14,10 @@ STD_FILES = [
     "Makefile",
     "README.md",
     # noxfile.py (or tox.ini)
-    "poetry.lock",
+    "uv.lock",
     "pyproject.toml",
     "ruff.toml",
     "src/",
-    "setup.cfg",
     "tests/",
 ]
 
@@ -40,7 +39,7 @@ class CruftCommand(Command):
                 print(f"Missing standard file: {std_file}")
                 success = False
 
-        if not Path("tox.init").exists() and not Path("noxfile.py").exists():
+        if not Path("tox.ini").exists() and not Path("noxfile.py").exists():
             print("Missing tox.ini or noxfile.py")
             success = False
 

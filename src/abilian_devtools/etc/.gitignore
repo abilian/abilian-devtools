@@ -10,7 +10,7 @@ __pycache__/
 *$py.class
 
 # Distribution / packaging
-poetry.lock
+uv.lock
 requirements.txt
 
 .Python

@@ -15,11 +15,11 @@ What this is?
 
 This is a curated, and opiniated, collection of best-of-breed Python development tools:
 
-- Formatters (`black`, `isort`, `docformatter`)
+- Formatters (`ruff format`, `docformatter`)
 - Testing frameworks (`pytest` and friends, `nox`)
-- Style checkers (`ruff`, `flake8` and friends)
-- Type checkers (`mypy`, `pyright`)
-- Supply chain audit (`pip-audit`, `safety`, `reuse`, `vulture`, `deptry`)
+- Style checkers (`ruff`)
+- Type checkers (`ty`)
+- Supply chain audit (`reuse`, `vulture`, `deptry`)
 - And more.
 
 Obviously, all the credit goes to the creators and maintainers of these wonderful projects. You have all our gratitude!
@@ -42,7 +42,7 @@ As a bonus, we're providing a CLI called `adt` which can help you get started:
 
 ```
 $ adt
-adt (0.5.x)
+adt (0.9.x)
 
 Usage:
   adt <command> [options] [arguments]
@@ -62,6 +62,7 @@ Available commands:
   format        Format code in specified files or directories.
   help-make     Helper to generate the `make help` message.
   test          Run tests.
+  typecheck     Run type checker on specified files or directories.
 ```
 
 

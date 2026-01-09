@@ -50,12 +50,11 @@ Ready to contribute? Here\'s how to set up [nua]{.title-ref} for local developme
 $ git clone git@github.com:your_name_here/abilian-devtools.git
 ```
 
-3. Install your local copy into a virtualenv. Assuming you have Poetry installed, this is how you set up your fork for local development:
+3. Install your local copy into a virtualenv. Assuming you have uv installed, this is how you set up your fork for local development:
 
 ```console
 $ cd abilian-devtools/
-$ poetry shell
-$ poetry install
+$ uv sync
 ```
 
 4. Create a branch for local development:
@@ -105,7 +104,7 @@ $ pytest tests/...
 A reminder for the maintainers on how to deploy. Make sure all your changes are committed (including an entry in HISTORY.md). Then run:
 
 ``` shell
-$ poetry version patch # possible: major / minor / patch
+$ adt bump-version patch  # possible: major / minor / patch
 $ git push
 $ git push --tags
 ```

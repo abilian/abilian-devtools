@@ -11,8 +11,7 @@ from ..shell import run
 class BumpVersionCommand(Command):
     """Bump version in pyproject.toml, commit & apply tag.
 
-    Parameter "rule" can be one of: "daily" or a parameter accepted by
-    "poetry version".
+    Parameter "rule" can be one of: "daily", "patch", "minor", or "major".
     """
 
     name = "bump-version"
@@ -44,7 +43,7 @@ class BumpVersionCommand(Command):
 
 class Versionner:
     rule: str
-    pyproject: tomlkit.document
+    pyproject: tomlkit.TOMLDocument
 
     def __init__(self, rule: str):
         # NB: we're using tomlkit for its roundtrip feature.
@@ -57,19 +56,11 @@ class Versionner:
     def write_pyproject(self):
         Path("pyproject.toml").write_text(tomlkit.dumps(self.pyproject))
 
-    def get_version(self):
-        if "tool" in self.pyproject and "poetry" in self.pyproject["tool"]:
-            version: str = self.pyproject["tool"]["poetry"]["version"]  # type: ignore
-        else:
-            version = self.pyproject["project"]["version"]
-
-        return version
+    def get_version(self) -> str:
+        return str(self.pyproject["project"]["version"])  # type: ignore[index]
 
     def set_version(self, version: str):
-        if "tool" in self.pyproject and "poetry" in self.pyproject["tool"]:
-            self.pyproject["tool"]["poetry"]["version"] = version
-        else:
-            self.pyproject["project"]["version"] = version
+        self.pyproject["project"]["version"] = version  # type: ignore[index]
 
     def update_version(self):
         if self.rule == "daily":

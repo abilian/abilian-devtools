@@ -1,5 +1,5 @@
 .PHONY: all develop test lint clean doc format
-.PHONY: clean clean-build clean-pyc clean-test coverage dist docs install lint lint/flake8
+.PHONY: clean clean-build clean-pyc clean-test coverage dist docs install lint
 
 
 all: lint
@@ -13,8 +13,7 @@ develop: install-deps activate-pre-commit configure-git
 
 install-deps:
 	@echo "--> Installing dependencies"
-	pip install -U pip setuptools wheel
-	poetry install
+	uv sync
 
 activate-pre-commit:
 	@echo "--> Activating pre-commit hook"
@@ -61,7 +60,7 @@ help:
 	adt help-make
 
 install:
-	poetry install
+	uv sync
 
 doc: doc-html doc-pdf
 

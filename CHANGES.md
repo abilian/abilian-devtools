@@ -1,9 +1,32 @@
-# Changelog
+# Changes
 
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [0.9.0] - 2025-01-09
+
+### Added
+- New `typecheck` command using `ty` type checker (`adt typecheck src`)
+
+### Changed
+- **BREAKING**: Replaced type checkers `mypy`, `pyright`, `pyrefly` with `ty`
+- **BREAKING**: Removed `black` and `isort` (ruff handles formatting and import sorting)
+- Modernized all Poetry references to uv
+- Updated `bump-version` command to only support modern pyproject.toml format
+- Updated `cruft` command to check for `uv.lock` instead of `poetry.lock`
+- Migrated `tool.uv.dev-dependencies` to `dependency-groups.dev`
+- Updated Makefile templates with uv commands
+
+### Removed
+- Removed `setup.cfg` (flake8/mypy configs no longer needed)
+- Removed `tox.ini` (project uses nox)
+- Removed Poetry version fallback in version management
+
+### Fixed
+- Fixed type errors found by `ty` type checker
+- Fixed typo in cruft command (`tox.init` → `tox.ini`)
 
 ## [0.8.0] - 2025-10-06
 
