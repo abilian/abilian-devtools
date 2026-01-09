@@ -3,8 +3,10 @@
 # SPDX-License-Identifier: MIT
 """Global ADT configuration management.
 
-Handles loading and managing the global ADT configuration from
-~/.config/adt/config.toml
+Configuration is loaded hierarchically:
+1. ~/.config/adt/config.toml (global defaults)
+2. .adt-config.toml (project-specific overrides)
+3. Command-line options (highest priority)
 """
 
 from dataclasses import dataclass, field
@@ -12,10 +14,10 @@ from pathlib import Path
 
 import tomlkit
 
-# Default config directory
-CONFIG_DIR = Path.home() / ".config" / "adt"
-CONFIG_FILE = CONFIG_DIR / "config.toml"
-PROFILES_DIR = CONFIG_DIR / "profiles"
+# Default config locations
+GLOBAL_CONFIG_DIR = Path.home() / ".config" / "adt"
+GLOBAL_CONFIG_FILE = GLOBAL_CONFIG_DIR / "config.toml"
+PROJECT_CONFIG_FILE = ".adt-config.toml"
 
 
 @dataclass
@@ -25,59 +27,52 @@ class ADTConfig:
     # Default profile name when none specified
     default_profile: str = ""
 
-    # Profile sources: name -> path or git URL
-    sources: dict[str, str] = field(default_factory=dict)
+    # Base directory for profile lookup by name
+    # e.g., ~/projects/project-profiles -> "adt seed -p python" finds python/ there
+    profiles_dir: Path | None = None
 
     # Global variable defaults
     variables: dict[str, str] = field(default_factory=dict)
 
     # Behavior settings
     confirm_scripts: bool = True
-    cache_git_profiles: bool = True
-    cache_dir: Path = field(
-        default_factory=lambda: Path.home() / ".cache" / "adt" / "profiles"
-    )
 
-    # Path to profiles directory (for test isolation)
-    profiles_dir: Path = field(default_factory=lambda: PROFILES_DIR)
-
-    # Path to the config file (for reference)
+    # Path to the config file that was loaded (for reference)
     config_path: Path | None = None
 
-    def get_profile_path(self, name: str) -> Path | None:
-        """Get the path to a profile by name.
+    def get_profile_path(self, name_or_path: str) -> Path | None:
+        """Get the path to a profile by name or path.
 
         Args:
-            name: Profile name to look up
+            name_or_path: Profile name or direct path to profile directory
 
         Returns:
             Path to the profile directory, or None if not found
         """
-        # Check explicit sources first
-        if name in self.sources:
-            source = self.sources[name]
-            # For now, only handle local paths (git support in later phase)
-            path = Path(source).expanduser()
-            if path.exists():
+        # If it looks like a path (contains / or starts with . or ~), treat as path
+        if "/" in name_or_path or name_or_path.startswith((".", "~")):
+            path = Path(name_or_path).expanduser().resolve()
+            if path.exists() and path.is_dir():
                 return path
+            return None
 
-        # Check profiles directory
-        profile_path = self.profiles_dir / name
-        if profile_path.exists():
-            return profile_path
+        # Otherwise, look up by name in profiles_dir
+        if self.profiles_dir:
+            profile_path = self.profiles_dir / name_or_path
+            if profile_path.exists() and profile_path.is_dir():
+                return profile_path
 
         return None
 
     def list_profiles(self) -> list[str]:
-        """List all available profile names.
+        """List all available profile names from profiles_dir.
 
         Returns:
-            List of profile names from sources and profiles directory
+            List of profile names
         """
-        profiles = set(self.sources.keys())
+        profiles: set[str] = set()
 
-        # Add profiles from profiles directory
-        if self.profiles_dir.exists():
+        if self.profiles_dir and self.profiles_dir.exists():
             for path in self.profiles_dir.iterdir():
                 if path.is_dir() and (path / "profile.toml").exists():
                     profiles.add(path.name)
@@ -87,49 +82,69 @@ class ADTConfig:
 
 def load_config(
     config_path: Path | None = None,
-    config_dir: Path | None = None,
+    project_dir: Path | None = None,
 ) -> ADTConfig:
-    """Load ADT configuration from file.
+    """Load ADT configuration with hierarchical merging.
+
+    Configuration sources (in priority order, lowest to highest):
+    1. ~/.config/adt/config.toml (global defaults)
+    2. .adt-config.toml in project_dir (project overrides)
+    3. Explicit config_path if provided (overrides all)
 
     Args:
-        config_path: Optional path to config file. Defaults to ~/.config/adt/config.toml
-        config_dir: Optional config directory (for testing). If provided, looks for
-                    config.toml in this directory and uses its profiles/ subdirectory.
+        config_path: Explicit config file path (overrides hierarchy)
+        project_dir: Project directory for .adt-config.toml lookup (default: cwd)
 
     Returns:
-        ADTConfig instance with loaded or default values
+        ADTConfig instance with merged values
     """
-    if config_dir is not None:
-        config_path = config_dir / "config.toml"
-        profiles_dir = config_dir / "profiles"
-    elif config_path is None:
-        config_path = CONFIG_FILE
-        profiles_dir = PROFILES_DIR
-    else:
-        profiles_dir = config_path.parent / "profiles"
+    config = ADTConfig()
+    project_dir = project_dir or Path.cwd()
 
-    config = ADTConfig(config_path=config_path, profiles_dir=profiles_dir)
-
-    if not config_path.exists():
+    # If explicit config path provided, use only that
+    if config_path is not None:
+        config.config_path = config_path
+        _load_config_file(config, config_path)
         return config
 
+    # Otherwise, load hierarchically
+    # 1. Global config
+    if GLOBAL_CONFIG_FILE.exists():
+        _load_config_file(config, GLOBAL_CONFIG_FILE)
+        config.config_path = GLOBAL_CONFIG_FILE
+
+    # 2. Project config (overrides global)
+    project_config = project_dir / PROJECT_CONFIG_FILE
+    if project_config.exists():
+        _load_config_file(config, project_config)
+        config.config_path = project_config
+
+    return config
+
+
+def _load_config_file(config: ADTConfig, config_path: Path) -> None:
+    """Load and merge a config file into an ADTConfig instance.
+
+    Args:
+        config: Config instance to update
+        config_path: Path to TOML config file
+    """
     try:
         content = config_path.read_text()
         data = tomlkit.parse(content)
     except Exception as e:
         print(f"Warning: Failed to parse config file {config_path}: {e}")
-        return config
+        return
 
-    # Load default profile
-    if "default_profile" in data:
-        config.default_profile = str(data["default_profile"])
+    # Load seed-specific settings
+    if "seed" in data:
+        seed = data["seed"]
+        if "default_profile" in seed:
+            config.default_profile = str(seed["default_profile"])
+        if "profiles_dir" in seed:
+            config.profiles_dir = Path(str(seed["profiles_dir"])).expanduser()
 
-    # Load sources
-    if "sources" in data:
-        for name, source in data["sources"].items():
-            config.sources[name] = str(source)
-
-    # Load variables
+    # Load variables (merged, not replaced)
     if "variables" in data:
         for name, value in data["variables"].items():
             config.variables[name] = str(value)
@@ -139,32 +154,16 @@ def load_config(
         settings = data["settings"]
         if "confirm_scripts" in settings:
             config.confirm_scripts = bool(settings["confirm_scripts"])
-        if "cache_git_profiles" in settings:
-            config.cache_git_profiles = bool(settings["cache_git_profiles"])
-        if "cache_dir" in settings:
-            config.cache_dir = Path(str(settings["cache_dir"])).expanduser()
-
-    return config
 
 
 def ensure_config_dir() -> Path:
-    """Ensure the config directory exists.
+    """Ensure the global config directory exists.
 
     Returns:
         Path to the config directory
     """
-    CONFIG_DIR.mkdir(parents=True, exist_ok=True)
-    return CONFIG_DIR
-
-
-def ensure_profiles_dir() -> Path:
-    """Ensure the profiles directory exists.
-
-    Returns:
-        Path to the profiles directory
-    """
-    PROFILES_DIR.mkdir(parents=True, exist_ok=True)
-    return PROFILES_DIR
+    GLOBAL_CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+    return GLOBAL_CONFIG_DIR
 
 
 def get_default_config_template() -> str:
@@ -175,26 +174,25 @@ def get_default_config_template() -> str:
     """
     return """\
 # ADT Configuration
-# Location: ~/.config/adt/config.toml
+# Global: ~/.config/adt/config.toml
+# Project: .adt-config.toml
 
+# Seed command settings
+[seed]
 # Default profile when none specified
 # default_profile = "python"
 
-# Profile sources - local paths or git URLs
-# [sources]
-# python = "~/.config/adt/profiles/python"
-# web = "~/.config/adt/profiles/web"
-# company = "git@github.com:mycompany/adt-profiles.git#main:profiles"
+# Base directory for profile lookup by name
+# With this set, "adt seed -p python" looks for python/ in this directory
+# profiles_dir = "~/projects/project-profiles"
 
 # Global variable defaults (lowest priority)
-# [variables]
+[variables]
 # author = "Your Name"
 # email = "you@example.com"
 # license = "MIT"
 
 # Behavior settings
-# [settings]
+[settings]
 # confirm_scripts = true
-# cache_git_profiles = true
-# cache_dir = "~/.cache/adt/profiles"
 """

@@ -343,8 +343,9 @@ MY_VAR = "my-value"
     def test_load_profile_by_name(self):
         """Test loading a profile by name from config."""
         with tempfile.TemporaryDirectory() as tmpdir:
-            # Create profile directory
-            profile_path = Path(tmpdir) / "profiles" / "my-profile"
+            # Create profiles directory
+            profiles_dir = Path(tmpdir) / "profiles"
+            profile_path = profiles_dir / "my-profile"
             profile_path.mkdir(parents=True)
             (profile_path / "profile.toml").write_text("""
 [profile]
@@ -352,8 +353,8 @@ name = "my-profile"
 description = "Loaded by name"
 """)
 
-            # Create config pointing to profile
-            config = ADTConfig(sources={"my-profile": str(profile_path)})
+            # Create config with profiles_dir
+            config = ADTConfig(profiles_dir=profiles_dir)
 
             profile = load_profile("my-profile", config)
             assert profile.name == "my-profile"
@@ -367,14 +368,15 @@ class TestResolveProfileChain:
     def test_resolve_single_profile(self):
         """Test resolving a single profile without inheritance."""
         with tempfile.TemporaryDirectory() as tmpdir:
-            profile_path = Path(tmpdir) / "profiles" / "simple"
+            profiles_dir = Path(tmpdir) / "profiles"
+            profile_path = profiles_dir / "simple"
             profile_path.mkdir(parents=True)
             (profile_path / "profile.toml").write_text("""
 [profile]
 name = "simple"
 """)
 
-            config = ADTConfig(sources={"simple": str(profile_path)})
+            config = ADTConfig(profiles_dir=profiles_dir)
             chain = resolve_profile_chain(["simple"], config)
 
             assert len(chain) == 1
@@ -394,13 +396,7 @@ name = "simple"
 name = "{name}"
 """)
 
-            config = ADTConfig(
-                sources={
-                    "a": str(profiles_dir / "a"),
-                    "b": str(profiles_dir / "b"),
-                    "c": str(profiles_dir / "c"),
-                }
-            )
+            config = ADTConfig(profiles_dir=profiles_dir)
 
             chain = resolve_profile_chain(["a", "b", "c"], config)
             assert len(chain) == 3
@@ -429,12 +425,7 @@ name = "child"
 extends = ["base"]
 """)
 
-            config = ADTConfig(
-                sources={
-                    "base": str(base),
-                    "child": str(child),
-                }
-            )
+            config = ADTConfig(profiles_dir=profiles_dir)
 
             chain = resolve_profile_chain(["child"], config)
             assert len(chain) == 2
@@ -472,13 +463,7 @@ name = "child"
 extends = ["parent"]
 """)
 
-            config = ADTConfig(
-                sources={
-                    "grandparent": str(grandparent),
-                    "parent": str(parent),
-                    "child": str(child),
-                }
-            )
+            config = ADTConfig(profiles_dir=profiles_dir)
 
             chain = resolve_profile_chain(["child"], config)
             assert len(chain) == 3
@@ -508,13 +493,7 @@ name = "{name}"
 extends = ["base"]
 """)
 
-            config = ADTConfig(
-                sources={
-                    "base": str(base),
-                    "a": str(profiles_dir / "a"),
-                    "b": str(profiles_dir / "b"),
-                }
-            )
+            config = ADTConfig(profiles_dir=profiles_dir)
 
             # Request both a and b, which both extend base
             chain = resolve_profile_chain(["a", "b"], config)

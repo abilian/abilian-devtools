@@ -36,6 +36,15 @@ lint.extend-ignore = [
     "TD006", #  	[*] invalid-todo-capitaliz
     "TRY003",
     "S101", # Use of "assert"
+    # "FBT001", # 	boolean-type-hint-positional-argument
+    "BLE001", # 	blind-except
+    "C901", #   	complex-structure
+    "E501", #   	line-too-long
+    "PLR0913", #	too-many-arguments
+    "DTZ005", # 	call-datetime-now-without-tzinfo
+    "PERF203", #	try-except-in-loop
+    "PERF401", #	manual-list-comprehension
+    "PLR0912", #	too-many-branches
 ]
 
 [lint.per-file-ignores]
