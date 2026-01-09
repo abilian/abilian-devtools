@@ -35,8 +35,8 @@ repos:
     - id: check-docstring-first
     - id: forbid-new-submodules
       args: ['--allow-missing-credentials']
-    - id: fix-encoding-pragma
-      args: ['--remove']
+    #- id: fix-encoding-pragma
+    #  args: ['--remove']
     # - id: name-tests-test
     # - id: no-commit-to-branch
     # - id: requirements-txt-fixer

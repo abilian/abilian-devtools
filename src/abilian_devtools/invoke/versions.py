@@ -15,7 +15,8 @@ TASKS = ["bump_version"]
 def bump_version(c: Context, rule: str = "patch"):
     """Bump version in pyproject.toml, commit & apply tag.
 
-    Parameter "rule" can be one of: "daily", "patch", "minor", or "major".
+    Parameter "rule" can be one of: "daily", "patch", "minor", or
+    "major".
     """
     r = c.run("git diff --quiet", echo=True, warn=True)
     if r.exited != 0:

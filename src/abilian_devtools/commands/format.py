@@ -25,5 +25,4 @@ class FormatCommand(Command):
         args = get_targets(args)
         args_str = " ".join(args)
 
-        run(f"black {args_str}")
-        run(f"isort {args_str}")
+        run(f"ruff format {args_str}")

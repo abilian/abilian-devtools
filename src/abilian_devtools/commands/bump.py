@@ -11,7 +11,8 @@ from ..shell import run
 class BumpVersionCommand(Command):
     """Bump version in pyproject.toml, commit & apply tag.
 
-    Parameter "rule" can be one of: "daily", "patch", "minor", or "major".
+    Parameter "rule" can be one of: "daily", "patch", "minor", or
+    "major".
     """
 
     name = "bump-version"

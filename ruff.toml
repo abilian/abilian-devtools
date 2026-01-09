@@ -8,6 +8,7 @@ lint.extend-ignore = [
     # False positives
     "COM812", # 	[*] missing-trailing-comma
     "RET504", # 	[ ] unnecessary-assign
+    "PLR2004", #	magic-value-comparison
     #
     "ANN", # 	[ ] missing-return-type-undocumented-public-function
     "D1", #   	[ ] undocumented-public-module
@@ -35,4 +36,16 @@ lint.extend-ignore = [
     "TD006", #  	[*] invalid-todo-capitaliz
     "TRY003",
     "S101", # Use of "assert"
+]
+
+[lint.per-file-ignores]
+"tests/**/*.py" = [
+    "ANN",     # Missing type annotations
+    "PLR2004", #	magic-value-comparison
+    "E501", #   	line-too-long
+    "INP001", # 	implicit-namespace-package
+    "PLW2901", #	redefined-loop-name
+    "DTZ005", # 	call-datetime-now-without-tzinfo
+    "PTH109", # 	os-getcwd
+    "S108", #   	hardcoded-temp-file
 ]

@@ -28,6 +28,7 @@ dependencies = [
     "pytest>=8",
     # Tooling
     "invoke>=2.2.0",
+    "jinja2>=3.0",
     "pre-commit>=4",
     # Misc
     "profilehooks>=1",
@@ -54,6 +55,7 @@ dev = [
     "devtools>=0.12.2",
     "docformatter>=1.7.5",
     # "scriv>=1.5.1",
+    "pyupgrade>=3.21.2",
     "snoop>=0.6",
     "twine>=6.0.1",
     "types-invoke>=2.0.0.10",
@@ -80,6 +82,14 @@ DEP002 = [
   "vulture",
 ]
 
+
+[tool.pytest.ini_options]
+markers = [
+    "unit: Unit tests (isolated, fast)",
+    "integration: Integration tests (with filesystem, slower)",
+    "e2e: End-to-end tests (full workflows)",
+    "slow: Slow tests",
+]
 
 [tool.bandit]
 skips = [
