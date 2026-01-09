@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2023 Abilian SAS <https://abilian.com/>
+# SPDX-FileCopyrightText: 2023-2026 Abilian SAS <https://abilian.com/>
 #
 # SPDX-License-Identifier: MIT
 """Seed command - add configuration files to a project.

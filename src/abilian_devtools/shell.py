@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2023 2022-2023 Abilian SAS <https://abilian.com/>
+# SPDX-FileCopyrightText: 2023-2026 2022-2023 Abilian SAS <https://abilian.com/>
 #
 # SPDX-License-Identifier: MIT
 import shlex
