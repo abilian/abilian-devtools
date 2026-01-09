@@ -2,7 +2,7 @@
 .PHONY: clean clean-build clean-pyc clean-test coverage dist docs install lint
 
 
-all: lint
+all: lint test
 
 #
 # Setup
