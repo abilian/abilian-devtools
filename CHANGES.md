@@ -8,9 +8,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.9.0] - 2025-01-09
 
 ### Added
+- **Seed command overhaul**: Complete rewrite of the `adt seed` command with profile-based project scaffolding
+  - Profile-based templates with inheritance (`extends` support)
+  - Jinja2 template rendering with custom filters and functions
+  - Variable resolution from multiple sources (pyproject.toml, config, profiles, env, CLI)
+  - Post-seed script execution with confirmation prompts
+  - Hierarchical configuration: `~/.config/adt/config.toml` (global) → `.adt-config.toml` (project) → `-c` (CLI)
+  - New CLI options: `-p/--profile`, `-l/--list`, `-i/--info`, `-o/--overwrite`, `-y/--yes`, `-n/--dry-run`, `-v/--var`
+- New template filters: `snake_case`, `kebab_case`, `camel_case`, `pascal_case`, `slug`, `pluralize`
+- New template functions: `now()`, `env()`, `exists()`, `read_file()`
+- Condition evaluation for conditional file inclusion and script execution
 - New `typecheck` command using `ty` type checker (`adt typecheck src`)
 
 ### Changed
+- Configuration simplified: replaced `sources` dict with single `profiles_dir` path
+- Boolean function arguments now keyword-only (fixes ruff FBT001)
 - **BREAKING**: Replaced type checkers `mypy`, `pyright`, `pyrefly` with `ty`
 - **BREAKING**: Removed `black` and `isort` (ruff handles formatting and import sorting)
 - Modernized all Poetry references to uv

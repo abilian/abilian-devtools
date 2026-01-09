@@ -54,6 +54,7 @@ class SeedCommand(Command):
     def run(
         self,
         profile: str | None = None,
+        *,
         list: bool = False,  # noqa: A002
         info: str | None = None,
         overwrite: bool = False,
@@ -86,6 +87,7 @@ class SeedCommand(Command):
         self,
         profile: str | None = None,
         var: list[str] | None = None,
+        *,
         overwrite: bool = False,
         yes: bool = False,
         dry_run: bool = False,
@@ -101,7 +103,7 @@ class SeedCommand(Command):
         if not profiles:
             # Fallback to built-in templates
             print(dim("No profile specified, using built-in templates"))
-            self._seed_builtin(overwrite, yes, dry_run)
+            self._seed_builtin(overwrite=overwrite, yes=yes, dry_run=dry_run)
             return
 
         # Parse CLI variables
@@ -120,11 +122,11 @@ class SeedCommand(Command):
 
         # Seed each profile in order
         for p in profiles:
-            self._seed_profile(p, context, overwrite, yes, dry_run)
+            self._seed_profile(p, context, overwrite=overwrite, yes=yes, dry_run=dry_run)
 
         # Run scripts from all profiles
         if not dry_run:
-            self._run_all_scripts(profiles, context, config, yes)
+            self._run_all_scripts(profiles, context, config, yes=yes)
 
         if dry_run:
             print(dim("\nDry run - no files were modified"))
@@ -172,6 +174,7 @@ class SeedCommand(Command):
         self,
         profile: Profile,
         context: dict,
+        *,
         overwrite: bool,
         yes: bool,
         dry_run: bool,
@@ -247,6 +250,7 @@ class SeedCommand(Command):
         profiles: list[Profile],
         context: dict,
         config: ADTConfig,
+        *,
         yes: bool,
     ):
         """Run scripts from all profiles.
@@ -383,7 +387,7 @@ class SeedCommand(Command):
         except Exception as e:
             print(f"  {red('error')} {script_name}: {e}")
 
-    def _seed_builtin(self, overwrite: bool, yes: bool, dry_run: bool):
+    def _seed_builtin(self, *, overwrite: bool, yes: bool, dry_run: bool):
         """Seed from built-in templates (backward compatibility).
 
         Args:
@@ -402,11 +406,12 @@ class SeedCommand(Command):
             if name in IGNORED_FILES:
                 continue
 
-            self._add_builtin_file(file, overwrite, yes, dry_run)
+            self._add_builtin_file(file, overwrite=overwrite, yes=yes, dry_run=dry_run)
 
     def _add_builtin_file(
         self,
         file: Path,
+        *,
         overwrite: bool,
         yes: bool,
         dry_run: bool,
