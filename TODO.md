@@ -11,3 +11,13 @@
 ## Done
 
 - [x] Add `cruft` command
+
+## New ideas for "seed" / "cruft".
+
+1) Extract as standalone ? Or revise the CLI DX ?
+
+2) Include default profiles. Use remote profiles (ex: "gh:org/proj", or full git url...)
+
+3) "meta-profiles" and/or profile coordination.
+
+4) Save parameters locally in a project (for future reference)
