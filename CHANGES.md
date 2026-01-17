@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.1] - 2025-01-17
+
+### Added
+- **Interactive file confirmation**: Seed command now prompts for each file by default
+  - `y` - Create/overwrite this file
+  - `n` - Skip this file
+  - `a` - Accept all remaining files (no more prompts)
+  - Use `-y/--yes` to skip all prompts
+- **Project profile templates**: New ready-to-use profiles in `sandbox/project-templates/`
+  - `python` - Base Python project with ruff, pytest, nox, pre-commit
+  - `flask` - Flask web application with SQLAlchemy, WTForms, gunicorn
+  - `litestar` - Litestar async framework with advanced-alchemy
+  - `fastapi` - FastAPI with Pydantic, alembic, uvicorn
+  - `cli` - Command-line application with Typer and Rich
+  - `library` - Reusable package with Sphinx documentation
+  - `docs` - Documentation with Material for MkDocs and blog support
+- Profile READMEs documenting each profile's features and usage
+
+### Changed
+- File creation now requires confirmation by default (use `-y` for old behavior)
+- Docs profile no longer extends python (standalone documentation profile)
+
 ## [0.9.0] - 2025-01-09
 
 ### Added
