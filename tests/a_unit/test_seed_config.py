@@ -206,9 +206,7 @@ class TestLoadConfig:
         with tempfile.TemporaryDirectory() as tmpdir:
             # Mock the global config file to a non-existent path
             fake_global = Path(tmpdir) / "nonexistent" / "config.toml"
-            with patch(
-                "abilian_devtools.seed.config.GLOBAL_CONFIG_FILE", fake_global
-            ):
+            with patch("abilian_devtools.seed.config.GLOBAL_CONFIG_FILE", fake_global):
                 # Act - load config with non-existent paths
                 config = load_config(project_dir=Path(tmpdir))
 

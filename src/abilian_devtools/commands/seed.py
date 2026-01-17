@@ -122,7 +122,9 @@ class SeedCommand(Command):
 
         # Seed each profile in order
         for p in profiles:
-            self._seed_profile(p, context, overwrite=overwrite, yes=yes, dry_run=dry_run)
+            self._seed_profile(
+                p, context, overwrite=overwrite, yes=yes, dry_run=dry_run
+            )
 
         # Run scripts from all profiles
         if not dry_run:
@@ -197,6 +199,7 @@ class SeedCommand(Command):
             return
 
         project_dir = Path.cwd()
+        accept_all = yes  # Track if user selected "all"
 
         for mapping in template_files:
             # Evaluate condition if present
@@ -208,17 +211,28 @@ class SeedCommand(Command):
                 continue
 
             dest_path = Path(mapping.dest)
+            file_exists = dest_path.exists()
 
             # Check if file exists
-            if dest_path.exists():
+            if file_exists:
                 if not overwrite:
                     print(f"  {dim('skip')} {mapping.dest} (exists)")
                     continue
-                if not yes and not dry_run:
-                    response = input(f"  Overwrite {mapping.dest}? [y/N] ")
-                    if response.lower() != "y":
+                if not accept_all and not dry_run:
+                    response = input(f"  Overwrite {mapping.dest}? [y/N/a] ").lower()
+                    if response == "a":
+                        accept_all = True
+                    elif response != "y":
                         print(f"  {dim('skip')} {mapping.dest}")
                         continue
+            # New file: prompt for confirmation unless -y or user selected "all"
+            elif not accept_all and not dry_run:
+                response = input(f"  Create {mapping.dest}? [y/N/a] ").lower()
+                if response == "a":
+                    accept_all = True
+                elif response != "y":
+                    print(f"  {dim('skip')} {mapping.dest}")
+                    continue
 
             # Read source content
             if not mapping.source.exists():
@@ -236,7 +250,7 @@ class SeedCommand(Command):
                     continue
 
             # Write file
-            action = "overwrite" if dest_path.exists() else "create"
+            action = "overwrite" if file_exists else "create"
             if dry_run:
                 print(f"  {dim(f'would {action}')} {mapping.dest}")
             else:
@@ -311,7 +325,9 @@ class SeedCommand(Command):
             if script.condition and not evaluate_condition(
                 script.condition, context, project_dir
             ):
-                print(f"  {dim('skip')} {script.path.name} (condition: {script.condition})")
+                print(
+                    f"  {dim('skip')} {script.path.name} (condition: {script.condition})"
+                )
                 continue
 
             # Check script exists
@@ -382,7 +398,9 @@ class SeedCommand(Command):
             if result.returncode == 0:
                 print(f"  {green('ok')} {script_name}")
             else:
-                print(f"  {red('failed')} {script_name} (exit code: {result.returncode})")
+                print(
+                    f"  {red('failed')} {script_name} (exit code: {result.returncode})"
+                )
 
         except Exception as e:
             print(f"  {red('error')} {script_name}: {e}")
@@ -396,6 +414,7 @@ class SeedCommand(Command):
             dry_run: Don't actually write files
         """
         etc_root = get_package_root("abilian_devtools") / "etc"
+        accept_all = yes
 
         for file in etc_root.iterdir():
             # Skip directories
@@ -406,47 +425,68 @@ class SeedCommand(Command):
             if name in IGNORED_FILES:
                 continue
 
-            self._add_builtin_file(file, overwrite=overwrite, yes=yes, dry_run=dry_run)
+            accept_all = self._add_builtin_file(
+                file,
+                overwrite=overwrite,
+                accept_all=accept_all,
+                dry_run=dry_run,
+            )
 
     def _add_builtin_file(
         self,
         file: Path,
         *,
         overwrite: bool,
-        yes: bool,
+        accept_all: bool,
         dry_run: bool,
-    ):
+    ) -> bool:
         """Add a single built-in file.
 
         Args:
             file: Source file path
             overwrite: Whether to overwrite existing files
-            yes: Skip confirmation prompts
+            accept_all: Skip confirmation prompts (may be updated by user)
             dry_run: Don't actually write files
+
+        Returns:
+            Updated accept_all value (True if user selected "all")
         """
         name = file.name
         metadata = self._get_metadata(file)
         name = metadata.get("name", name)
         dest_path = Path(name)
+        file_exists = dest_path.exists()
 
-        if dest_path.exists():
+        if file_exists:
             if not overwrite:
                 print(f"  {dim('skip')} {name} (exists)")
-                return
-            if not yes and not dry_run:
-                response = input(f"  Overwrite {name}? [y/N] ")
-                if response.lower() != "y":
+                return accept_all
+            if not accept_all and not dry_run:
+                response = input(f"  Overwrite {name}? [y/N/a] ").lower()
+                if response == "a":
+                    accept_all = True
+                elif response != "y":
                     print(f"  {dim('skip')} {name}")
-                    return
+                    return accept_all
+        # New file: prompt for confirmation
+        elif not accept_all and not dry_run:
+            response = input(f"  Create {name}? [y/N/a] ").lower()
+            if response == "a":
+                accept_all = True
+            elif response != "y":
+                print(f"  {dim('skip')} {name}")
+                return accept_all
 
         content = file.read_text()
 
-        action = "overwrite" if dest_path.exists() else "create"
+        action = "overwrite" if file_exists else "create"
         if dry_run:
             print(f"  {dim(f'would {action}')} {name}")
         else:
             dest_path.write_text(content)
             print(f"  {action} {name}")
+
+        return accept_all
 
     def _get_metadata(self, file: Path) -> dict:
         """Extract ADT metadata from file comments.

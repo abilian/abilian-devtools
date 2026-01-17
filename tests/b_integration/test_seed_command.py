@@ -44,7 +44,7 @@ class TestSeedCommandBuiltin:
                 mock_config.return_value = ADTConfig()
 
                 cmd = create_seed_command()
-                cmd.run()
+                cmd.run(yes=True)  # Skip interactive prompts
 
             # Check that at least some files were created
             created_files = list(Path(tmpdir).iterdir())
@@ -79,7 +79,7 @@ class TestSeedCommandBuiltin:
                 mock_config.return_value = ADTConfig()
 
                 cmd = create_seed_command()
-                cmd.run()
+                cmd.run(yes=True)  # Skip interactive prompts
 
             # File should still have original content
             assert existing.read_text() == "existing content"
@@ -155,7 +155,7 @@ MIT License
             mock_config.return_value = config
 
             cmd = create_seed_command()
-            cmd.run(profile="test-profile")
+            cmd.run(profile="test-profile", yes=True)
 
         # Check files were created
         assert (project_dir / "README.txt").exists()
@@ -180,7 +180,7 @@ MIT License
             mock_config.return_value = config
 
             cmd = create_seed_command()
-            cmd.run(profile="test-profile", dry_run=True)
+            cmd.run(profile="test-profile", dry_run=True, yes=True)
 
         # Files should not be created
         assert not (project_dir / "README.txt").exists()
@@ -306,7 +306,7 @@ author = "Child Author"
             mock_config.return_value = config
 
             cmd = create_seed_command()
-            cmd.run(profile="child")
+            cmd.run(profile="child", yes=True)
 
         # Both base and child files should be created
         assert (project_dir / "base.txt").exists()
@@ -376,7 +376,7 @@ version = "2.5.0"
             mock_config.return_value = config
 
             cmd = create_seed_command()
-            cmd.run(profile="vars")
+            cmd.run(profile="vars", yes=True)
 
         content = (project_dir / "vars.txt").read_text()
 
@@ -433,7 +433,7 @@ name = "nested"
                 mock_config.return_value = config
 
                 cmd = create_seed_command()
-                cmd.run(profile="nested")
+                cmd.run(profile="nested", yes=True)
 
             # Check all files were created with correct structure
             assert (project_dir / "root.txt").exists()
@@ -570,7 +570,9 @@ name = "auto-scripts"
             # Create multiple scripts (should be sorted alphabetically)
             for _i, name in enumerate(["02-second.sh", "01-first.sh"]):
                 script = scripts_dir / name
-                script.write_text(f"#!/bin/bash\necho '{name}' >> execution_order.txt\n")
+                script.write_text(
+                    f"#!/bin/bash\necho '{name}' >> execution_order.txt\n"
+                )
                 script.chmod(0o755)
 
             project_dir = tmpdir / "project"
@@ -656,3 +658,89 @@ post_seed = [
         # Script should NOT have run
         marker_file = project_dir / "script_executed.txt"
         assert not marker_file.exists()
+
+
+@pytest.mark.integration
+@pytest.mark.usefixtures("restore_cwd")
+class TestSeedCommandInteractive:
+    """Tests for seed command interactive confirmation."""
+
+    def test_seed_prompts_for_each_file(self, monkeypatch):
+        """Test that seed prompts for each file by default."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmpdir = Path(tmpdir).resolve()
+
+            # Create profile
+            profiles_dir = tmpdir / "profiles"
+            profile_dir = profiles_dir / "interactive"
+            profile_dir.mkdir(parents=True)
+            (profile_dir / "profile.toml").write_text("""
+[profile]
+name = "interactive"
+""")
+            templates_dir = profile_dir / "templates"
+            templates_dir.mkdir()
+            (templates_dir / "file1.txt").write_text("content1")
+            (templates_dir / "file2.txt").write_text("content2")
+
+            project_dir = tmpdir / "project"
+            project_dir.mkdir()
+
+            config = ADTConfig(profiles_dir=profiles_dir, confirm_scripts=False)
+
+            os.chdir(project_dir)
+
+            # Simulate user declining first file, accepting second
+            # Note: file order may vary, so we just check that only one file is created
+            responses = iter(["n", "y"])
+            monkeypatch.setattr("builtins.input", lambda _: next(responses))
+
+            with patch("abilian_devtools.commands.seed.load_config") as mock_config:
+                mock_config.return_value = config
+
+                cmd = create_seed_command()
+                cmd.run(profile="interactive")
+
+            # Exactly one file should be created (user said n, then y)
+            created_files = list(project_dir.glob("*.txt"))
+            assert len(created_files) == 1
+
+    def test_seed_accept_all_option(self, monkeypatch):
+        """Test that 'a' accepts all remaining files."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmpdir = Path(tmpdir).resolve()
+
+            # Create profile
+            profiles_dir = tmpdir / "profiles"
+            profile_dir = profiles_dir / "accept-all"
+            profile_dir.mkdir(parents=True)
+            (profile_dir / "profile.toml").write_text("""
+[profile]
+name = "accept-all"
+""")
+            templates_dir = profile_dir / "templates"
+            templates_dir.mkdir()
+            (templates_dir / "file1.txt").write_text("content1")
+            (templates_dir / "file2.txt").write_text("content2")
+            (templates_dir / "file3.txt").write_text("content3")
+
+            project_dir = tmpdir / "project"
+            project_dir.mkdir()
+
+            config = ADTConfig(profiles_dir=profiles_dir, confirm_scripts=False)
+
+            os.chdir(project_dir)
+
+            # Simulate user selecting "a" (all) on first file
+            monkeypatch.setattr("builtins.input", lambda _: "a")
+
+            with patch("abilian_devtools.commands.seed.load_config") as mock_config:
+                mock_config.return_value = config
+
+                cmd = create_seed_command()
+                cmd.run(profile="accept-all")
+
+            # All files should be created
+            assert (project_dir / "file1.txt").exists()
+            assert (project_dir / "file2.txt").exists()
+            assert (project_dir / "file3.txt").exists()
