@@ -374,18 +374,25 @@ def resolve_profile_chain(
 
     resolved: list[Profile] = []
     seen: set[str] = set()
+    # Track directories to search for sibling profiles
+    sibling_dirs: list[Path] = []
 
     def resolve_one(name: str) -> None:
         if name in seen:
             return  # Already resolved
 
-        profile = load_profile(name, config)
+        profile = _load_profile_with_siblings(name, config, sibling_dirs)
 
         # Check for circular dependency
         if name in [p.name for p in resolved if p.name not in seen]:
             raise ProfileError(f"Circular profile dependency detected: {name}")
 
         seen.add(name)
+
+        # Add this profile's parent directory for sibling lookup
+        parent_dir = profile.path.parent
+        if parent_dir not in sibling_dirs:
+            sibling_dirs.append(parent_dir)
 
         # Resolve extended profiles first
         for parent_name in profile.extends:
@@ -397,6 +404,43 @@ def resolve_profile_chain(
         resolve_one(name)
 
     return resolved
+
+
+def _load_profile_with_siblings(
+    name_or_path: str,
+    config: ADTConfig,
+    sibling_dirs: list[Path],
+) -> Profile:
+    """Load a profile, checking sibling directories for named profiles.
+
+    Args:
+        name_or_path: Profile name or path
+        config: ADT config
+        sibling_dirs: List of directories to check for sibling profiles
+
+    Returns:
+        Loaded Profile
+
+    Raises:
+        ProfileError: If profile not found
+    """
+    # First try the standard load (handles paths and config lookup)
+    path = Path(name_or_path).expanduser()
+    if path.exists() and path.is_dir():
+        return _load_profile_from_path(path)
+
+    # Check sibling directories for named profiles
+    for sibling_dir in sibling_dirs:
+        sibling_path = sibling_dir / name_or_path
+        if sibling_path.exists() and sibling_path.is_dir():
+            return _load_profile_from_path(sibling_path)
+
+    # Fall back to config lookup
+    profile_path = config.get_profile_path(name_or_path)
+    if profile_path is None:
+        raise ProfileError(f"Profile not found: {name_or_path}")
+
+    return _load_profile_from_path(profile_path)
 
 
 def validate_profile(profile: Profile) -> list[str]:

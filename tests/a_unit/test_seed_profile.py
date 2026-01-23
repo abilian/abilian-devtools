@@ -504,6 +504,85 @@ extends = ["base"]
             assert len(chain) == 3
 
 
+    def test_resolve_sibling_profiles_from_direct_path(self):
+        """Test resolving profiles by sibling directory when using direct path."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Create sibling profiles in same parent directory
+            parent_dir = Path(tmpdir) / "project-templates"
+            parent_dir.mkdir()
+
+            # Base profile (python)
+            python = parent_dir / "python"
+            python.mkdir()
+            (python / "profile.toml").write_text("""
+[profile]
+name = "python"
+description = "Base Python profile"
+""")
+
+            # Child profile (litestar) that extends python
+            litestar = parent_dir / "litestar"
+            litestar.mkdir()
+            (litestar / "profile.toml").write_text("""
+[profile]
+name = "litestar"
+description = "Litestar extends Python"
+extends = ["python"]
+""")
+
+            # Use empty config (no profiles_dir configured)
+            config = ADTConfig()
+
+            # Resolve using direct path to litestar
+            chain = resolve_profile_chain([str(litestar)], config)
+
+            # Should resolve both: python (sibling) and litestar
+            assert len(chain) == 2
+            assert chain[0].name == "python"
+            assert chain[1].name == "litestar"
+
+    def test_resolve_deep_sibling_inheritance(self):
+        """Test resolving multi-level sibling inheritance."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            parent_dir = Path(tmpdir) / "profiles"
+            parent_dir.mkdir()
+
+            # Base profile
+            base = parent_dir / "base"
+            base.mkdir()
+            (base / "profile.toml").write_text("""
+[profile]
+name = "base"
+""")
+
+            # Middle profile extends base
+            middle = parent_dir / "middle"
+            middle.mkdir()
+            (middle / "profile.toml").write_text("""
+[profile]
+name = "middle"
+extends = ["base"]
+""")
+
+            # Child profile extends middle
+            child = parent_dir / "child"
+            child.mkdir()
+            (child / "profile.toml").write_text("""
+[profile]
+name = "child"
+extends = ["middle"]
+""")
+
+            config = ADTConfig()
+
+            # Resolve using direct path to child
+            chain = resolve_profile_chain([str(child)], config)
+
+            # Should resolve all three in order
+            assert len(chain) == 3
+            assert [p.name for p in chain] == ["base", "middle", "child"]
+
+
 @pytest.mark.unit
 class TestValidateProfile:
     """Tests for validate_profile function."""
