@@ -4,7 +4,7 @@ requires-python = ">=3.10, <4.0"
 
 [[package]]
 name = "abilian-devtools"
-version = "0.9.2"
+version = "0.9.3"
 source = { editable = "." }
 dependencies = [
     { name = "cleez" },
