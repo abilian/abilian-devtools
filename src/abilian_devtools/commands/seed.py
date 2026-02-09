@@ -34,6 +34,29 @@ IGNORED_FILES = {
 }
 
 
+class UserCancelledError(Exception):
+    """Raised when user cancels with Ctrl+C."""
+
+
+def prompt(message: str) -> str:
+    """Prompt user for input, handling Ctrl+C gracefully.
+
+    Args:
+        message: The prompt message to display
+
+    Returns:
+        User's input string
+
+    Raises:
+        UserCancelledError: If user presses Ctrl+C
+    """
+    try:
+        return input(message)
+    except KeyboardInterrupt:
+        print()  # New line after ^C
+        raise UserCancelledError  # noqa: B904
+
+
 class SeedCommand(Command):
     """Seed project with configuration files from profiles."""
 
@@ -74,14 +97,18 @@ class SeedCommand(Command):
             self._show_profile_info(info, config)
             return
 
-        self._run_seed(
-            profile=profile,
-            var=var or [],
-            overwrite=overwrite,
-            yes=yes,
-            dry_run=dry_run,
-            config=config,
-        )
+        try:
+            self._run_seed(
+                profile=profile,
+                var=var or [],
+                overwrite=overwrite,
+                yes=yes,
+                dry_run=dry_run,
+                config=config,
+            )
+        except UserCancelledError:
+            print(dim("Cancelled"))
+            return
 
     def _run_seed(
         self,
@@ -219,7 +246,7 @@ class SeedCommand(Command):
                     print(f"  {dim('skip')} {mapping.dest} (exists)")
                     continue
                 if not accept_all and not dry_run:
-                    response = input(f"  Overwrite {mapping.dest}? [y/N/a] ").lower()
+                    response = prompt(f"  Overwrite {mapping.dest}? [y/N/a] ").lower()
                     if response == "a":
                         accept_all = True
                     elif response != "y":
@@ -227,7 +254,7 @@ class SeedCommand(Command):
                         continue
             # New file: prompt for confirmation unless -y or user selected "all"
             elif not accept_all and not dry_run:
-                response = input(f"  Create {mapping.dest}? [y/N/a] ").lower()
+                response = prompt(f"  Create {mapping.dest}? [y/N/a] ").lower()
                 if response == "a":
                     accept_all = True
                 elif response != "y":
@@ -295,7 +322,7 @@ class SeedCommand(Command):
                 for script in scripts:
                     print(f"  {dim(profile.name + '/')} {script.path.name}")
             print()
-            response = input("Run these scripts? [y/N] ")
+            response = prompt("Run these scripts? [y/N] ")
             if response.lower() != "y":
                 print(dim("Scripts skipped"))
                 return
@@ -462,7 +489,7 @@ class SeedCommand(Command):
                 print(f"  {dim('skip')} {name} (exists)")
                 return accept_all
             if not accept_all and not dry_run:
-                response = input(f"  Overwrite {name}? [y/N/a] ").lower()
+                response = prompt(f"  Overwrite {name}? [y/N/a] ").lower()
                 if response == "a":
                     accept_all = True
                 elif response != "y":
@@ -470,7 +497,7 @@ class SeedCommand(Command):
                     return accept_all
         # New file: prompt for confirmation
         elif not accept_all and not dry_run:
-            response = input(f"  Create {name}? [y/N/a] ").lower()
+            response = prompt(f"  Create {name}? [y/N/a] ").lower()
             if response == "a":
                 accept_all = True
             elif response != "y":
