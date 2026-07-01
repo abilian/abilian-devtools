@@ -61,9 +61,34 @@ Available commands:
   cruft         Run cruft audit.
   format        Format code in specified files or directories.
   help-make     Helper to generate the `make help` message.
+  seed          Seed project with configuration files from profiles.
   test          Run tests.
   typecheck     Run type checker on specified files or directories.
 ```
+
+### Subcommands
+
+- **`adt all`** — Run linters, type checker, and tests in sequence. Handy as a pre-commit or CI sanity check.
+- **`adt audit`** — Run security and supply chain audits (`pip-audit`, `bandit`, `reuse lint`).
+- **`adt bump-version <part>`** — Bump the version in `pyproject.toml`, create a commit, and tag the release. `<part>` is one of `major`, `minor`, `patch`, or `daily`.
+- **`adt check [paths...]`** — Run static checkers (`ruff check`, `vulture`) on the given paths, or on `src` and `tests` by default.
+- **`adt clean`** — Remove build artifacts, caches, and other cruft (`__pycache__`, `.pytest_cache`, `dist/`, `build/`, etc.).
+- **`adt cruft`** — Audit the project against a set of expected standard files (e.g. `LICENSE`, `README`, `pyproject.toml`).
+- **`adt format [paths...]`** — Format code with `ruff format` (and friends) on the given paths, or on `src` and `tests` by default.
+- **`adt help-make`** — Print a `make help` message generated from the targets in your `Makefile`.
+- **`adt seed`** — Drop opinionated configuration files into a project from a *profile* (a reusable bundle of templates, variables, and post-seed scripts). This is what we use to keep dozens of projects aligned on the same conventions without depending on a heavyweight templating tool.
+    - `adt seed -l` — list available profiles (looked up in `~/.config/adt/profiles/` or sources declared in `~/.config/adt/config.toml`).
+    - `adt seed -i <profile>` — show a profile's description, variables, template files, and scripts.
+    - `adt seed -p <profile>` — apply a profile (uses the configured default profile when `-p` is omitted; falls back to built-in templates if no profile is configured).
+    - `adt seed -v key=value` — override or provide template variables; repeat the flag to set several.
+    - `adt seed -n` — dry run: show what would be created or overwritten without touching the filesystem.
+    - `adt seed -o` — overwrite existing files (you'll still be prompted per file unless `-y` is passed).
+    - `adt seed -y` — skip all confirmation prompts (useful in CI or when re-seeding a known-good profile).
+
+  Profiles support inheritance (one profile can `extend` another), conditional templates, Jinja2 rendering, and post-seed scripts that run with `ADT_*` variables exported in the environment.
+
+- **`adt test [paths...]`** — Run `pytest` on the given paths, or on `src` and `tests` by default.
+- **`adt typecheck [paths...]`** — Run the `ty` type checker on the given paths, or on `src` by default.
 
 
 Why this?
