@@ -47,8 +47,8 @@ Repository = "https://github.com/abilian/abilian-devtools"
 adt = "abilian_devtools.cli:main"
 
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["uv-build>=0.8.4,<0.9.0"]
+build-backend = "uv_build"
 
 [dependency-groups]
 dev = [
