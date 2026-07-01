@@ -37,7 +37,8 @@ class BumpVersionCommand(Command):
         versionner.update_version()
         version = versionner.get_version()
 
-        run("git add pyproject.toml")
+        run("uv sync")
+        run("git add pyproject.toml uv.lock")
         run(f"git commit -m 'Bump version ({version})'")
         run(f"git tag {version}")
 
