@@ -10,16 +10,25 @@ nox.options.sessions = [
 ]
 
 
-@nox.session(python=PYTHON_VERSIONS)
+def install(session: nox.Session) -> None:
+    """The project and its dev group, from the lockfile, in the session's
+    virtualenv. With the uv backend, uv also fetches a missing interpreter."""
+    session.run_install(
+        "uv",
+        "sync",
+        "--locked",
+        f"--python={session.virtualenv.location}",
+        env={"UV_PROJECT_ENVIRONMENT": session.virtualenv.location},
+    )
+
+
+@nox.session(python=PYTHON_VERSIONS, venv_backend="uv")
 def lint(session: nox.Session):
-    session.install("-e", ".")
+    install(session)
     session.run("make", "lint", external=True)
 
 
-@nox.session(python=PYTHON_VERSIONS)
+@nox.session(python=PYTHON_VERSIONS, venv_backend="uv")
 def pytest(session: nox.Session):
-    session.install("-e", ".")
-    session.install("pytest")
-    session.run("pip", "check")
-
+    install(session)
     session.run("pytest", "tests", "src")
