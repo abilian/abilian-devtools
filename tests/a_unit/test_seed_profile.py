@@ -503,7 +503,6 @@ extends = ["base"]
             assert names.count("base") == 1
             assert len(chain) == 3
 
-
     def test_resolve_sibling_profiles_from_direct_path(self):
         """Test resolving profiles by sibling directory when using direct path."""
         with tempfile.TemporaryDirectory() as tmpdir:

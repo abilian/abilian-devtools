@@ -39,8 +39,8 @@ def pytest_addoption(parser: pytest.Parser) -> None:
 
 @pytest.hookimpl(tryfirst=True)
 def pytest_load_initial_conftests(early_config: pytest.Config) -> None:
-    """Before the conftest files: what they import must see no setting of
-    the machine either."""
+    """Before the conftest files: what they import must see no setting of the
+    machine either."""
     name = early_config.getini(OPTION)
     if name:
         isolate(load(name))
@@ -60,8 +60,11 @@ def load(name: str) -> Any:
 
 
 def isolate(settings_class: Any) -> list[str]:
-    """Remove the environment variables the class reads, and turn off its
-    .env file. The variables removed, by name."""
+    """Remove the environment variables the class reads, and turn off its .env
+    file.
+
+    The variables removed, by name.
+    """
     names = set(environment_names(settings_class))
     case_sensitive = settings_class.model_config.get("case_sensitive", False)
     removed = [
