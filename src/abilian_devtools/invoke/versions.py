@@ -1,31 +1,16 @@
-"""Version bumpers, using date-based versioning.
-
-Todo: also support semantic versionning.
-"""
-
-import sys
+"""Version bumper, as an invoke task."""
 
 from invoke import Context
 
-from abilian_devtools.commands.bump import Versionner
+from abilian_devtools.commands.bump import bump_version as _bump_version
 
 TASKS = ["bump_version"]
 
 
-def bump_version(c: Context, rule: str = "patch"):
+def bump_version(c: Context, rule: str = "patch") -> None:
     """Bump version in pyproject.toml, commit & apply tag.
 
     Parameter "rule" can be one of: "daily", "patch", "minor", or
-    "major".
+    "major". The same as `adt bump-version`.
     """
-    r = c.run("git diff --quiet", echo=True, warn=True)
-    if r.exited != 0:
-        print("git diff --quiet failed")
-        sys.exit()
-
-    versionner = Versionner(rule)
-    versionner.update_version()
-    version = versionner.get_version()
-    c.run("git add pyproject.toml", echo=True)
-    c.run(f"git commit -m 'Bump version ({version})'", echo=True)
-    c.run(f"git tag {version}", echo=True)
+    _bump_version(rule)

@@ -77,15 +77,15 @@ Available commands:
 - **`adt format [paths...]`** — Format code with `ruff format` (and friends) on the given paths, or on `src` and `tests` by default.
 - **`adt help-make`** — Print a `make help` message generated from the targets in your `Makefile`.
 - **`adt seed`** — Drop opinionated configuration files into a project from a *profile* (a reusable bundle of templates, variables, and post-seed scripts). This is what we use to keep dozens of projects aligned on the same conventions without depending on a heavyweight templating tool.
-    - `adt seed -l` — list available profiles (looked up in `~/.config/adt/profiles/` or sources declared in `~/.config/adt/config.toml`).
+    - `adt seed -l` — list available profiles: the directories in the `profiles_dir` set in the `[seed]` section of `~/.config/adt/config.toml` or of the project's `.adt-config.toml`.
     - `adt seed -i <profile>` — show a profile's description, variables, template files, and scripts.
-    - `adt seed -p <profile>` — apply a profile (uses the configured default profile when `-p` is omitted; falls back to built-in templates if no profile is configured).
+    - `adt seed -p <profile>` — apply a profile, by name or path (uses the configured default profile when `-p` is omitted; falls back to built-in templates if no profile is configured). A profile that can't be found is an error.
     - `adt seed -v key=value` — override or provide template variables; repeat the flag to set several.
     - `adt seed -n` — dry run: show what would be created or overwritten without touching the filesystem.
     - `adt seed -o` — overwrite existing files (you'll still be prompted per file unless `-y` is passed).
     - `adt seed -y` — skip all confirmation prompts (useful in CI or when re-seeding a known-good profile).
 
-  Profiles support inheritance (one profile can `extend` another), conditional templates, Jinja2 rendering, and post-seed scripts that run with `ADT_*` variables exported in the environment.
+  Profiles support inheritance (one profile can `extend` another), conditional templates, Jinja2 rendering, and post-seed scripts that run with `ADT_*` variables exported in the environment. A condition is a Jinja2 expression (`use_docker and not use_kubernetes`). Templates and conditions run in Jinja2's sandbox, so a profile runs no code but its scripts, which are confirmed first. A condition that can't be evaluated (a misspelt variable, say), a template error or a failing script doesn't stop the other files, but makes `adt seed` exit with status 1.
 
 - **`adt test [paths...]`** — Run `pytest` on the given paths, or on `src` and `tests` by default.
 - **`adt typecheck [paths...]`** — Run the `ty` type checker on the given paths, or on `src` by default.
@@ -101,7 +101,9 @@ A project's tests should read nothing from the developer's machine. A `DEBUG=tru
 settings_class = "app.config:Settings"
 ```
 
-Before any `conftest.py` is imported, the plugin removes from the test process's environment every variable the class reads (each field's alias or alias choices, or the prefix and the field's name, matched without regard to case unless the class is case-sensitive), and turns off the class's `.env` file. Each test, or fixture, then sets what it needs. The developer's shell keeps its variables. Without the option, the plugin does nothing.
+Before any `conftest.py` is imported, the plugin removes from the test process's environment every variable the class reads (each field's alias or alias choices, or the prefix and the field's name, and the variables of nested fields under `env_nested_delimiter`, matched without regard to case unless the class is case-sensitive), and turns off the class's `.env` file and secrets directory. An instance created when the class's module is imported, such as `settings = Settings()`, is created again from the cleaned environment; if it can't be (a required field without a default), pytest stops with an error that names it. Each test, or fixture, then sets what it needs. The developer's shell keeps its variables. Without the option, the plugin does nothing.
+
+The plugin covers the class named, and the instances of exactly that class in the modules imported with it. Settings read through other sources (a custom `settings_customise_sources`, a TOML or YAML file) are not turned off.
 
 Why this?
 ---------

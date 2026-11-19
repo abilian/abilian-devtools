@@ -12,17 +12,29 @@ import pytest
 pytest_plugins = ["pytester"]
 
 SETTINGS = """
-from pydantic import AliasChoices, Field
+from pydantic import AliasChoices, AliasPath, BaseModel, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
+class Database(BaseModel):
+    host: str = "localhost"
+
+
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_prefix="APP_", env_file=".env")
+    model_config = SettingsConfigDict(
+        env_prefix="APP_", env_file=".env", env_nested_delimiter="__"
+    )
 
     debug: bool = Field(default=False, alias="DEBUG")
     secret_key: str = Field(default="placeholder", alias="SECRET_KEY")
     region: str = "eu"  # APP_REGION
     token: str = Field(default="", validation_alias=AliasChoices("TOKEN", "API_TOKEN"))
+    db: Database = Database()  # APP_DB, APP_DB__HOST
+    zone: str = Field(default="a", validation_alias=AliasPath("ZONES", 0))
+
+
+# Created at import, before the plugin could clean the environment.
+settings = Settings()
 """
 
 # At import, as a project's conftest may: the plugin must have run before.
@@ -36,18 +48,31 @@ TESTS = """
 import os
 
 from conftest import SEEN_AT_IMPORT
-from settings import Settings
+from settings import Settings, settings
+
+MACHINE = ("DEBUG", "SECRET_KEY", "APP_REGION", "API_TOKEN", "app_region")
+MACHINE += ("APP_DB__HOST", "ZONES")
 
 
 def test_the_machines_settings_are_gone():
     assert SEEN_AT_IMPORT == {"DEBUG": None, "SECRET_KEY": None}
-    for name in ("DEBUG", "SECRET_KEY", "APP_REGION", "API_TOKEN", "app_region"):
+    for name in MACHINE:
         assert name not in os.environ, name
     assert os.environ["UNRELATED"] == "kept"
+    assert os.environ["APP_DBX"] == "kept"  # not a nested field's variable
 
 
 def test_the_dotenv_file_is_ignored():
     assert Settings().secret_key == "placeholder"
+
+
+def test_the_instance_created_at_import_is_created_again():
+    assert settings == Settings()
+    assert (settings.debug, settings.secret_key, settings.db.host) == (
+        False,
+        "placeholder",
+        "localhost",
+    )
 """
 
 
@@ -64,7 +89,10 @@ def project(pytester: pytest.Pytester, monkeypatch: pytest.MonkeyPatch):
         "APP_REGION": "us",
         "app_region": "us",  # case-insensitive, as pydantic-settings reads it
         "API_TOKEN": "t0k3n",
+        "APP_DB__HOST": "prod-db",
+        "ZONES": '["z"]',
         "UNRELATED": "kept",
+        "APP_DBX": "kept",
     }.items():
         monkeypatch.setenv(name, value)
     return pytester
@@ -84,7 +112,7 @@ def test_the_settings_of_the_machine_are_ignored(project: pytest.Pytester) -> No
 
     result = project.runpytest_subprocess("-p", "no:randomly", "-p", "no:random_order")
 
-    result.assert_outcomes(passed=2)
+    result.assert_outcomes(passed=3)
 
 
 def test_without_the_option_nothing_changes(project: pytest.Pytester) -> None:
@@ -92,7 +120,7 @@ def test_without_the_option_nothing_changes(project: pytest.Pytester) -> None:
 
     result = project.runpytest_subprocess("-p", "no:randomly", "-p", "no:random_order")
 
-    result.assert_outcomes(failed=2)  # the machine's settings are all there
+    result.assert_outcomes(failed=3)  # the machine's settings are all there
 
 
 def test_a_settings_class_that_cant_be_found_is_an_error(
@@ -104,3 +132,33 @@ def test_a_settings_class_that_cant_be_found_is_an_error(
 
     assert result.ret == pytest.ExitCode.USAGE_ERROR
     result.stderr.fnmatch_lines(["*settings_class = 'settings:Nope'*"])
+
+
+def test_an_instance_that_needs_the_machines_settings_is_an_error(
+    pytester: pytest.Pytester, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    pytester.makepyfile(
+        settings="""
+from pydantic_settings import BaseSettings
+
+
+class Settings(BaseSettings):
+    database_url: str  # required
+
+
+settings = Settings()
+"""
+    )
+    monkeypatch.setenv("PYTHONPATH", str(pytester.path))
+    monkeypatch.setenv("DATABASE_URL", "postgresql://prod")
+    configure(pytester, 'settings_class = "settings:Settings"')
+
+    result = pytester.runpytest_subprocess()
+
+    assert result.ret == pytest.ExitCode.USAGE_ERROR
+    result.stderr.fnmatch_lines(
+        [
+            "*settings.settings, created at import, can't be created again*",
+            "*database_url*",
+        ]
+    )

@@ -27,20 +27,29 @@ class BumpVersionCommand(Command):
         ),
     ]
 
-    def run(self, rule: str = "patch"):
-        return_code = run("git diff --quiet", warn=True)
-        if return_code != 0:
-            print("Your repo is dirty. Please commit or stash changes first.")
-            sys.exit(1)
+    def run(self, rule: str = "patch") -> None:
+        bump_version(rule)
 
-        versionner = Versionner(rule)
-        versionner.update_version()
-        version = versionner.get_version()
 
-        run("uv sync")
-        run("git add pyproject.toml uv.lock")
-        run(f"git commit -m 'Bump version ({version})'")
-        run(f"git tag {version}")
+def bump_version(rule: str) -> None:
+    """Bump the version by `rule`, then commit pyproject.toml and uv.lock and
+    tag the commit. Refuses to run on a repository with changes, staged or
+    not, since the commit would take the staged ones along."""
+    if run(["git", "diff", "--quiet", "HEAD"], warn=True) != 0:
+        print(
+            "bump-version can't commit the new version: the repository has "
+            "uncommitted changes (staged or not). Commit or stash them first."
+        )
+        sys.exit(1)
+
+    versionner = Versionner(rule)
+    versionner.update_version()
+    version = versionner.get_version()
+
+    run(["uv", "sync"])
+    run(["git", "add", "pyproject.toml", "uv.lock"])
+    run(["git", "commit", "-m", f"Bump version ({version})"])
+    run(["git", "tag", version])
 
 
 class Versionner:
@@ -52,19 +61,16 @@ class Versionner:
         self.pyproject = tomlkit.parse(Path("pyproject.toml").read_text())
         self.rule = rule
 
-    def read_pyproject(self):
-        self.pyproject = tomlkit.parse(Path("pyproject.toml").read_text())
-
-    def write_pyproject(self):
+    def write_pyproject(self) -> None:
         Path("pyproject.toml").write_text(tomlkit.dumps(self.pyproject))
 
     def get_version(self) -> str:
         return str(self.pyproject["project"]["version"])  # type: ignore[index]
 
-    def set_version(self, version: str):
+    def set_version(self, version: str) -> None:
         self.pyproject["project"]["version"] = version  # type: ignore[index]
 
-    def update_version(self):
+    def update_version(self) -> None:
         if self.rule == "daily":
             new_version = self.new_version_daily()
         else:
@@ -74,7 +80,7 @@ class Versionner:
         self.set_version(new_version)
         self.write_pyproject()
 
-    def new_version_daily(self):
+    def new_version_daily(self) -> str:
         version = self.get_version()
 
         serial = int(version.split(".")[-1])
@@ -89,7 +95,7 @@ class Versionner:
         new_version = f"{new_date}.{serial}"
         return new_version
 
-    def new_version(self):
+    def new_version(self) -> str:
         version = self.get_version()
         major, minor, patch = version.split(".")
         match self.rule:

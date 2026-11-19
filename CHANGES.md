@@ -8,7 +8,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- **A pytest plugin: tests that ignore the machine's settings.** A project names its pydantic-settings class in its pytest configuration (`settings_class = "app.config:Settings"`); before any `conftest.py` is imported, the plugin removes the environment variables the class reads and turns off its `.env` file, so that a variable exported by direnv, or a secret in `.env`, can't make a test pass on one machine and fail on another. Without the option, it does nothing.
+- **A pytest plugin: tests that ignore the machine's settings.** A project names its pydantic-settings class in its pytest configuration (`settings_class = "app.config:Settings"`); before any `conftest.py` is imported, the plugin removes the environment variables the class reads (nested fields' included) and turns off its `.env` file and secrets directory, so that a variable exported by direnv, or a secret in `.env`, can't make a test pass on one machine and fail on another. An instance created at import is created again from the cleaned environment. Without the option, it does nothing.
+
+### Fixed
+- `adt check`, `format`, `typecheck`, `test`, `audit` and `bump-version` exited with status 0 when the tool they ran failed; they now exit with its status.
+- `adt test <paths>` checked each path letter by letter, and took a single path.
+- Paths with spaces are passed whole to the tools `adt` runs.
+- `adt seed -p <name>` with an unknown name seeded the built-in templates instead; it is now an error, as is `adt seed -i` on an unknown profile.
+- `adt seed` exits with status 1 when a template, a condition or a script fails, a `-v` has no `=`, or a configuration or `pyproject.toml` file can't be parsed (which it used to ignore).
+- A condition that can't be evaluated counted as true, so a misspelt variable always created the file; it is now an error.
+- Templates and conditions run in Jinja2's sandbox: a profile could run code through them before, and without, the scripts' confirmation.
+- A circular profile dependency was never detected, and the profile was applied twice; it is now an error. A base shared by two profiles is applied once.
+- `adt bump-version` committed changes already staged along with the new version; it now refuses to run on a repository with uncommitted changes, staged or not. The invoke task runs the same code (it didn't update `uv.lock`).
+- `adt clean` no longer walks into `.venv`, `.git` and other hidden directories.
+
+### Removed
+- The unused `validate_profile`, `ensure_config_dir` and `get_default_config_template` functions, and the `[conditions]` and `[variables.meta]` profile sections, which were parsed and never used.
 
 ## [0.9.2] - 2025-01-23
 

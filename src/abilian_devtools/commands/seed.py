@@ -8,8 +8,10 @@ Supports profile-based seeding with variable expansion and layered profiles.
 
 import inspect
 import os
+import re
 import stat
 import subprocess
+import sys
 from pathlib import Path
 
 from cleez.colors import bold, dim, green, red, yellow
@@ -24,7 +26,9 @@ from ..seed import (
     load_profile,
     render_template,
 )
-from ..seed.profile import ProfileError, resolve_profile_chain
+from ..seed.config import ConfigError
+from ..seed.profile import FileMapping, ProfileError, resolve_profile_chain
+from ..seed.template import ConditionError
 from ..seed.variables import parse_cli_vars
 
 IGNORED_FILES = {
@@ -33,9 +37,16 @@ IGNORED_FILES = {
     "profile.toml",
 }
 
+# In a built-in file, a comment such as `# ADT: name=.gitignore`.
+METADATA_RE = re.compile(r"ADT:\s*(\w+)\s*=\s*(\S+)")
+
 
 class UserCancelledError(Exception):
     """Raised when user cancels with Ctrl+C."""
+
+
+class SeedFailedError(Exception):
+    """Seeding ran, but some files or scripts failed."""
 
 
 def prompt(message: str) -> str:
@@ -54,7 +65,12 @@ def prompt(message: str) -> str:
         return input(message)
     except KeyboardInterrupt:
         print()  # New line after ^C
-        raise UserCancelledError  # noqa: B904
+        raise UserCancelledError from None
+
+
+def error(message: str) -> None:
+    """Print an error on stderr."""
+    print(red(message), file=sys.stderr)
 
 
 class SeedCommand(Command):
@@ -66,7 +82,13 @@ class SeedCommand(Command):
 
     options = [
         Option("-p", "--profile", metavar="NAME", help="Profile name or path"),
-        Option("-l", "--list", action="store_true", help="List profiles"),
+        Option(
+            "-l",
+            "--list",
+            dest="list_profiles",
+            action="store_true",
+            help="List profiles",
+        ),
         Option("-i", "--info", metavar="PROFILE", help="Show profile info"),
         Option("-o", "--overwrite", action="store_true", help="Overwrite files"),
         Option("-y", "--yes", action="store_true", help="Skip confirmations"),
@@ -78,85 +100,92 @@ class SeedCommand(Command):
         self,
         profile: str | None = None,
         *,
-        list: bool = False,  # noqa: A002
+        list_profiles: bool = False,
         info: str | None = None,
         overwrite: bool = False,
         yes: bool = False,
         dry_run: bool = False,
         var: list[str] | None = None,
-    ):
-        config = load_config()
-
-        # Handle --list
-        if list:
-            self._list_profiles(config)
-            return
-
-        # Handle --info
-        if info:
-            self._show_profile_info(info, config)
-            return
+    ) -> None:
+        try:
+            cli_vars = parse_cli_vars(var or [])
+        except ValueError as e:
+            error(f"seed can't run: {e}")
+            raise SystemExit(1) from None
 
         try:
-            self._run_seed(
-                profile=profile,
-                var=var or [],
-                overwrite=overwrite,
-                yes=yes,
-                dry_run=dry_run,
-                config=config,
-            )
+            config = load_config()
+            if list_profiles:
+                self._list_profiles(config)
+            elif info:
+                self._show_profile_info(info, config)
+            else:
+                self._run_seed(
+                    profile=profile,
+                    cli_vars=cli_vars,
+                    overwrite=overwrite,
+                    yes=yes,
+                    dry_run=dry_run,
+                    config=config,
+                )
         except UserCancelledError:
             print(dim("Cancelled"))
-            return
+        except (ConfigError, ProfileError) as e:
+            error(f"seed can't run: {e}")
+            raise SystemExit(1) from None
+        except SeedFailedError as e:
+            error(f"seed failed: {e}")
+            raise SystemExit(1) from None
 
     def _run_seed(
         self,
-        profile: str | None = None,
-        var: list[str] | None = None,
+        profile: str | None,
+        cli_vars: dict,
         *,
-        overwrite: bool = False,
-        yes: bool = False,
-        dry_run: bool = False,
-        config: ADTConfig | None = None,
-    ):
-        config = config or load_config()
-
+        overwrite: bool,
+        yes: bool,
+        dry_run: bool,
+        config: ADTConfig,
+    ) -> None:
         print(bold("Seeding project..."))
 
-        # Determine which profile to use
         profiles = self._resolve_profile(profile, config)
 
         if not profiles:
-            # Fallback to built-in templates
             print(dim("No profile specified, using built-in templates"))
-            self._seed_builtin(overwrite=overwrite, yes=yes, dry_run=dry_run)
+            failures = self._seed_profile(
+                builtin_profile(),
+                {},
+                overwrite=overwrite,
+                yes=yes,
+                dry_run=dry_run,
+            )
+            self._report(failures, dry_run=dry_run)
             return
 
-        # Parse CLI variables
-        cli_vars = parse_cli_vars(var or [])
-
-        # Create variable resolver
         resolver = VariableResolver(
             cli_vars=cli_vars,
             profiles=profiles,
             config=config,
             project_dir=Path.cwd(),
         )
-
-        # Resolve variables
         context = resolver.resolve()
 
-        # Seed each profile in order
+        failures = 0
         for p in profiles:
-            self._seed_profile(
+            failures += self._seed_profile(
                 p, context, overwrite=overwrite, yes=yes, dry_run=dry_run
             )
 
-        # Run scripts from all profiles
         if not dry_run:
-            self._run_all_scripts(profiles, context, config, yes=yes)
+            failures += self._run_all_scripts(profiles, context, config, yes=yes)
 
+        self._report(failures, dry_run=dry_run)
+
+    def _report(self, failures: int, *, dry_run: bool) -> None:
+        if failures:
+            msg = f"{failures} file(s) or script(s) failed, see above"
+            raise SeedFailedError(msg)
         if dry_run:
             print(dim("\nDry run - no files were modified"))
         else:
@@ -174,30 +203,30 @@ class SeedCommand(Command):
             config: ADT config
 
         Returns:
-            List of Profile objects (handles inheritance)
+            List of Profile objects (handles inheritance), empty if no profile
+            was named, on the command line or in the config
+
+        Raises:
+            ProfileError: If the profile named can't be found or loaded
         """
-        # Use default profile if none specified
         profile_spec = profile_arg or config.default_profile
         if not profile_spec:
             return []
 
-        # Get profile path (handles both names and paths)
         profile_path = config.get_profile_path(profile_spec)
         if not profile_path:
-            print(f"Error: Profile not found: {profile_spec}")
             if config.profiles_dir:
-                print(f"  Looked in: {config.profiles_dir}")
+                hint = f"looked in {config.profiles_dir}"
             else:
-                print("  Hint: Set profiles_dir in config or use full path")
-            return []
+                hint = (
+                    "no profiles_dir is configured: set one in "
+                    "~/.config/adt/config.toml, or give the profile's path"
+                )
+            msg = f"profile {profile_spec!r} not found ({hint})"
+            raise ProfileError(msg)
 
-        # Load profile and resolve inheritance chain
         # Pass the actual path string to handle direct paths correctly
-        try:
-            return resolve_profile_chain([str(profile_path)], config)
-        except ProfileError as e:
-            print(f"Error: {e}")
-            return []
+        return resolve_profile_chain([str(profile_path)], config)
 
     def _seed_profile(
         self,
@@ -207,7 +236,7 @@ class SeedCommand(Command):
         overwrite: bool,
         yes: bool,
         dry_run: bool,
-    ):
+    ) -> int:
         """Seed files from a single profile.
 
         Args:
@@ -216,6 +245,9 @@ class SeedCommand(Command):
             overwrite: Whether to overwrite existing files
             yes: Skip confirmation prompts
             dry_run: Don't actually write files
+
+        Returns:
+            The number of files that failed
         """
         print(f"\nProfile: {bold(profile.name)}")
 
@@ -223,68 +255,68 @@ class SeedCommand(Command):
 
         if not template_files:
             print(dim("  No template files found"))
-            return
+            return 0
 
         project_dir = Path.cwd()
         accept_all = yes  # Track if user selected "all"
+        failures = 0
 
         for mapping in template_files:
-            # Evaluate condition if present
-            if mapping.condition and not evaluate_condition(
-                mapping.condition, context, project_dir
-            ):
-                msg = f"  {dim('skip')} {mapping.dest} (condition: {mapping.condition})"
-                print(msg)
+            try:
+                if mapping.condition and not evaluate_condition(
+                    mapping.condition, context, project_dir
+                ):
+                    print(
+                        f"  {dim('skip')} {mapping.dest} "
+                        f"(condition: {mapping.condition})"
+                    )
+                    continue
+            except ConditionError as e:
+                error(f"  {mapping.dest}: {e}")
+                failures += 1
                 continue
 
             dest_path = Path(mapping.dest)
             file_exists = dest_path.exists()
 
-            # Check if file exists
-            if file_exists:
-                if not overwrite:
-                    print(f"  {dim('skip')} {mapping.dest} (exists)")
-                    continue
-                if not accept_all and not dry_run:
-                    response = prompt(f"  Overwrite {mapping.dest}? [y/N/a] ").lower()
-                    if response == "a":
-                        accept_all = True
-                    elif response != "y":
-                        print(f"  {dim('skip')} {mapping.dest}")
-                        continue
-            # New file: prompt for confirmation unless -y or user selected "all"
-            elif not accept_all and not dry_run:
-                response = prompt(f"  Create {mapping.dest}? [y/N/a] ").lower()
+            if file_exists and not overwrite:
+                print(f"  {dim('skip')} {mapping.dest} (exists)")
+                continue
+
+            action = "overwrite" if file_exists else "create"
+            if not accept_all and not dry_run:
+                response = prompt(
+                    f"  {action.capitalize()} {mapping.dest}? [y/N/a] "
+                ).lower()
                 if response == "a":
                     accept_all = True
                 elif response != "y":
                     print(f"  {dim('skip')} {mapping.dest}")
                     continue
 
-            # Read source content
             if not mapping.source.exists():
-                print(f"  {dim('error')} {mapping.dest} (source not found)")
+                error(f"  {mapping.dest}: source {mapping.source} not found")
+                failures += 1
                 continue
 
             content = mapping.source.read_text()
 
-            # Render template if needed
             if mapping.is_template:
                 try:
                     content = render_template(content, context, project_dir)
                 except Exception as e:
-                    print(f"  {dim('error')} {mapping.dest} (template error: {e})")
+                    error(f"  {mapping.dest}: template error: {e}")
+                    failures += 1
                     continue
 
-            # Write file
-            action = "overwrite" if file_exists else "create"
             if dry_run:
                 print(f"  {dim(f'would {action}')} {mapping.dest}")
             else:
-                # Ensure parent directory exists
                 dest_path.parent.mkdir(parents=True, exist_ok=True)
                 dest_path.write_text(content)
                 print(f"  {action} {mapping.dest}")
+
+        return failures
 
     def _run_all_scripts(
         self,
@@ -293,7 +325,7 @@ class SeedCommand(Command):
         config: ADTConfig,
         *,
         yes: bool,
-    ):
+    ) -> int:
         """Run scripts from all profiles.
 
         Args:
@@ -301,20 +333,16 @@ class SeedCommand(Command):
             context: Variable context
             config: ADT config
             yes: Skip confirmation prompts
-        """
-        # Collect all scripts from all profiles
-        all_scripts = []
-        for profile in profiles:
-            scripts = profile.get_scripts()
-            if scripts:
-                all_scripts.append((profile, scripts))
 
+        Returns:
+            The number of scripts that failed
+        """
+        all_scripts = [(p, p.get_scripts()) for p in profiles if p.get_scripts()]
         if not all_scripts:
-            return
+            return 0
 
         print(bold("\nRunning post-seed scripts..."))
 
-        # Check if confirmation is required
         if config.confirm_scripts and not yes:
             print()
             print(yellow("The following scripts will be executed:"))
@@ -325,12 +353,15 @@ class SeedCommand(Command):
             response = prompt("Run these scripts? [y/N] ")
             if response.lower() != "y":
                 print(dim("Scripts skipped"))
-                return
+                return 0
 
-        # Run scripts
         project_dir = Path.cwd()
+        failures = 0
         for profile, scripts in all_scripts:
-            self._run_profile_scripts(profile, scripts, context, project_dir)
+            failures += self._run_profile_scripts(
+                profile, scripts, context, project_dir
+            )
+        return failures
 
     def _run_profile_scripts(
         self,
@@ -338,7 +369,7 @@ class SeedCommand(Command):
         scripts: list,
         context: dict,
         project_dir: Path,
-    ):
+    ) -> int:
         """Run scripts from a single profile.
 
         Args:
@@ -346,27 +377,35 @@ class SeedCommand(Command):
             scripts: List of ScriptConfig objects
             context: Variable context
             project_dir: Project directory (cwd)
+
+        Returns:
+            The number of scripts that failed
         """
+        failures = 0
         for script in scripts:
-            # Evaluate condition if present
-            if script.condition and not evaluate_condition(
-                script.condition, context, project_dir
-            ):
-                print(
-                    f"  {dim('skip')} {script.path.name} (condition: {script.condition})"
-                )
+            try:
+                if script.condition and not evaluate_condition(
+                    script.condition, context, project_dir
+                ):
+                    print(
+                        f"  {dim('skip')} {script.path.name} "
+                        f"(condition: {script.condition})"
+                    )
+                    continue
+            except ConditionError as e:
+                error(f"  {script.path.name}: {e}")
+                failures += 1
                 continue
 
-            # Check script exists
             if not script.path.exists():
-                print(f"  {red('error')} {script.path.name} (not found)")
+                error(f"  {script.path.name}: script {script.path} not found")
+                failures += 1
                 continue
 
-            # Build environment
             env = self._build_script_env(profile, context)
-
-            # Run the script
-            self._execute_script(script.path, env, project_dir)
+            if not self._execute_script(script.path, env, project_dir):
+                failures += 1
+        return failures
 
     def _build_script_env(self, profile: Profile, context: dict) -> dict:
         """Build environment variables for script execution.
@@ -386,22 +425,23 @@ class SeedCommand(Command):
                 env[f"ADT_{key.upper()}"] = str(value)
 
         # Add profile-specific script environment
-        for key, value in profile.script_env.items():
-            env[key] = value
+        env.update(profile.script_env)
 
-        # Add some useful defaults
         env["ADT_PROFILE"] = profile.name
         env["ADT_PROFILE_PATH"] = str(profile.path)
 
         return env
 
-    def _execute_script(self, script_path: Path, env: dict, cwd: Path):
+    def _execute_script(self, script_path: Path, env: dict, cwd: Path) -> bool:
         """Execute a single script.
 
         Args:
             script_path: Path to the script
             env: Environment variables
             cwd: Working directory
+
+        Returns:
+            True if the script ran and exited with status 0
         """
         script_name = script_path.name
 
@@ -413,128 +453,19 @@ class SeedCommand(Command):
         print(f"  {dim('run')} {script_name}")
 
         try:
-            result = subprocess.run(
-                [str(script_path)],
-                cwd=cwd,
-                env=env,
-                capture_output=False,
-                text=True,
-                check=False,
-            )
+            result = subprocess.run([str(script_path)], cwd=cwd, env=env, check=False)
+        except OSError as e:
+            error(f"  {script_name} can't be run: {e}")
+            return False
 
-            if result.returncode == 0:
-                print(f"  {green('ok')} {script_name}")
-            else:
-                print(
-                    f"  {red('failed')} {script_name} (exit code: {result.returncode})"
-                )
+        if result.returncode != 0:
+            error(f"  {script_name} failed with exit status {result.returncode}")
+            return False
 
-        except Exception as e:
-            print(f"  {red('error')} {script_name}: {e}")
+        print(f"  {green('ok')} {script_name}")
+        return True
 
-    def _seed_builtin(self, *, overwrite: bool, yes: bool, dry_run: bool):
-        """Seed from built-in templates (backward compatibility).
-
-        Args:
-            overwrite: Whether to overwrite existing files
-            yes: Skip confirmation prompts
-            dry_run: Don't actually write files
-        """
-        etc_root = get_package_root("abilian_devtools") / "etc"
-        accept_all = yes
-
-        for file in etc_root.iterdir():
-            # Skip directories
-            if file.is_dir():
-                continue
-
-            name = file.name
-            if name in IGNORED_FILES:
-                continue
-
-            accept_all = self._add_builtin_file(
-                file,
-                overwrite=overwrite,
-                accept_all=accept_all,
-                dry_run=dry_run,
-            )
-
-    def _add_builtin_file(
-        self,
-        file: Path,
-        *,
-        overwrite: bool,
-        accept_all: bool,
-        dry_run: bool,
-    ) -> bool:
-        """Add a single built-in file.
-
-        Args:
-            file: Source file path
-            overwrite: Whether to overwrite existing files
-            accept_all: Skip confirmation prompts (may be updated by user)
-            dry_run: Don't actually write files
-
-        Returns:
-            Updated accept_all value (True if user selected "all")
-        """
-        name = file.name
-        metadata = self._get_metadata(file)
-        name = metadata.get("name", name)
-        dest_path = Path(name)
-        file_exists = dest_path.exists()
-
-        if file_exists:
-            if not overwrite:
-                print(f"  {dim('skip')} {name} (exists)")
-                return accept_all
-            if not accept_all and not dry_run:
-                response = prompt(f"  Overwrite {name}? [y/N/a] ").lower()
-                if response == "a":
-                    accept_all = True
-                elif response != "y":
-                    print(f"  {dim('skip')} {name}")
-                    return accept_all
-        # New file: prompt for confirmation
-        elif not accept_all and not dry_run:
-            response = prompt(f"  Create {name}? [y/N/a] ").lower()
-            if response == "a":
-                accept_all = True
-            elif response != "y":
-                print(f"  {dim('skip')} {name}")
-                return accept_all
-
-        content = file.read_text()
-
-        action = "overwrite" if file_exists else "create"
-        if dry_run:
-            print(f"  {dim(f'would {action}')} {name}")
-        else:
-            dest_path.write_text(content)
-            print(f"  {action} {name}")
-
-        return accept_all
-
-    def _get_metadata(self, file: Path) -> dict:
-        """Extract ADT metadata from file comments.
-
-        Args:
-            file: File to extract metadata from
-
-        Returns:
-            Dictionary of metadata key-value pairs
-        """
-        metadata = {}
-        content = file.read_text()
-        lines = content.splitlines()
-        for line in lines:
-            if "ADT:" not in line:
-                continue
-            key, value = line.split("ADT:")[1].split("=", 1)
-            metadata[key.strip()] = value.strip()
-        return metadata
-
-    def _list_profiles(self, config: ADTConfig):
+    def _list_profiles(self, config: ADTConfig) -> None:
         """List available profiles.
 
         Args:
@@ -548,9 +479,9 @@ class SeedCommand(Command):
         if not profiles:
             print(dim("  No profiles configured"))
             print()
-            print("To add profiles, either:")
-            print("  1. Create profiles in ~/.config/adt/profiles/")
-            print("  2. Add sources to ~/.config/adt/config.toml")
+            print("To add profiles, set profiles_dir to a directory of profiles,")
+            print("in the [seed] section of ~/.config/adt/config.toml")
+            print("or of the project's .adt-config.toml.")
             return
 
         for name in profiles:
@@ -565,18 +496,17 @@ class SeedCommand(Command):
             print()
             print(f"Default profile: {bold(config.default_profile)}")
 
-    def _show_profile_info(self, name: str, config: ADTConfig):
+    def _show_profile_info(self, name: str, config: ADTConfig) -> None:
         """Show detailed information about a profile.
 
         Args:
             name: Profile name
             config: Global ADT config
+
+        Raises:
+            ProfileError: If the profile can't be found or loaded
         """
-        try:
-            profile = load_profile(name, config)
-        except ProfileError as e:
-            print(f"Error: {e}")
-            return
+        profile = load_profile(name, config)
 
         print(bold(f"Profile: {profile.name}"))
         print()
@@ -590,14 +520,12 @@ class SeedCommand(Command):
         if profile.extends:
             print(f"Extends: {', '.join(profile.extends)}")
 
-        # Variables
         if profile.variables:
             print()
             print(bold("Variables:"))
             for key, value in profile.variables.items():
                 print(f"  {key} = {value}")
 
-        # Template files
         template_files = profile.get_template_files()
         if template_files:
             print()
@@ -606,13 +534,32 @@ class SeedCommand(Command):
                 suffix = " (jinja2)" if mapping.is_template else ""
                 print(f"  {mapping.dest}{dim(suffix)}")
 
-        # Scripts
         scripts = profile.get_scripts()
         if scripts:
             print()
             print(bold("Scripts:"))
             for script in scripts:
                 print(f"  {script.path.name}")
+
+
+def builtin_profile() -> Profile:
+    """The files shipped in the package's `etc` directory, as a profile.
+
+    A file is seeded under the name its `ADT: name=...` comment gives, or its
+    own (a dotfile can't always be shipped under its name).
+    """
+    etc_root = get_package_root("abilian_devtools") / "etc"
+    mappings = [
+        FileMapping(source=file, dest=get_metadata(file).get("name", file.name))
+        for file in sorted(etc_root.iterdir())
+        if file.is_file() and file.name not in IGNORED_FILES
+    ]
+    return Profile(name="built-in", path=etc_root, file_mappings=mappings)
+
+
+def get_metadata(file: Path) -> dict[str, str]:
+    """The `ADT: key=value` metadata in a file's comments."""
+    return dict(METADATA_RE.findall(file.read_text()))
 
 
 def get_package_root(package_name: str) -> Path:

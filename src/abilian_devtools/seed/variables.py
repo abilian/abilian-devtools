@@ -21,8 +21,9 @@ from pathlib import Path
 from typing import Any
 
 import tomlkit
+import tomlkit.exceptions
 
-from .config import ADTConfig
+from .config import ADTConfig, ConfigError
 from .profile import Profile
 
 
@@ -168,10 +169,10 @@ class VariableResolver:
             return self._pyproject_data
 
         try:
-            content = pyproject_path.read_text()
-            self._pyproject_data = dict(tomlkit.parse(content))
-        except Exception:
-            self._pyproject_data = {}
+            self._pyproject_data = dict(tomlkit.parse(pyproject_path.read_text()))
+        except tomlkit.exceptions.ParseError as e:
+            msg = f"{pyproject_path} can't be parsed: {e}"
+            raise ConfigError(msg) from e
 
         return self._pyproject_data
 
@@ -181,13 +182,8 @@ class VariableResolver:
         Returns:
             Dictionary with ADT version and profile info
         """
-        try:
-            adt_version = get_package_version("abilian-devtools")
-        except Exception:
-            adt_version = "unknown"
-
         return {
-            "version": adt_version,
+            "version": get_package_version("abilian-devtools"),
             "profiles": [p.name for p in self.profiles],
         }
 
@@ -229,12 +225,16 @@ def parse_cli_vars(var_args: list[str]) -> dict[str, Any]:
 
     Returns:
         Dictionary of parsed variables
+
+    Raises:
+        ValueError: If an argument isn't of the form name=value
     """
     result = {}
 
     for arg in var_args:
         if "=" not in arg:
-            continue
+            msg = f"variable {arg!r} has no value: write it as name=value"
+            raise ValueError(msg)
 
         name, value = arg.split("=", 1)
         name = name.strip()

@@ -18,10 +18,8 @@ class TypeCheckCommand(Command):
         Argument("args", nargs="*", help="Files or directories to check"),
     ]
 
-    def run(self, args: list[str] | None = None):
+    def run(self, args: list[str] | None = None) -> None:
         print(bold("Running type checker..."))
 
-        args = get_targets(args)
-        args_str = " ".join(args)
-
-        run(f"ty check {args_str}")
+        targets = get_targets(args)
+        run(["ty", "check", *targets])

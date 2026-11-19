@@ -2,745 +2,394 @@
 #
 # SPDX-License-Identifier: MIT
 
-"""Integration tests for the seed command."""
+"""Integration tests for the seed command.
 
-import os
-import tempfile
-from pathlib import Path
-from unittest.mock import MagicMock, patch
+Each test runs `adt seed` through the real command-line parser, in a project
+directory of its own, with a global configuration file the test writes (the
+root conftest puts it in the test's temporary directory).
+"""
+
+from __future__ import annotations
+
+from datetime import datetime
+from typing import TYPE_CHECKING
 
 import pytest
 
-from abilian_devtools.commands.seed import SeedCommand
-from abilian_devtools.seed.config import ADTConfig
+from abilian_devtools.cli import get_cli
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+BUILTIN_FILES = {".envrc", ".gitignore", ".pre-commit-config.yaml", "Makefile"}
+BUILTIN_FILES |= {"ruff.toml"}
 
 
-def create_seed_command():
-    """Create a SeedCommand with a mock CLI."""
-    mock_cli = MagicMock()
-    return SeedCommand(mock_cli)
+def adt(*args: str) -> None:
+    get_cli().run(["adt", *args])
+
+
+def adt_fails(*args: str) -> None:
+    """Run adt, which must exit with status 1."""
+    with pytest.raises(SystemExit) as exit_info:
+        adt(*args)
+    assert exit_info.value.code == 1
+
+
+def files_in(directory: Path) -> set[str]:
+    return {str(p.relative_to(directory)) for p in directory.rglob("*") if p.is_file()}
 
 
 @pytest.fixture
-def restore_cwd():
-    """Fixture to restore working directory after test."""
-    original_cwd = os.getcwd()
-    yield
-    os.chdir(original_cwd)
+def project(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    """An empty project directory, the current directory."""
+    path = tmp_path / "project"
+    path.mkdir()
+    monkeypatch.chdir(path)
+    return path
+
+
+@pytest.fixture
+def profiles_dir(tmp_path: Path, global_config_file: Path) -> Path:
+    """A directory of profiles, named in the global config. Scripts run
+    without confirmation, unless a test writes another config."""
+    path = tmp_path / "profiles"
+    path.mkdir()
+    write_config(global_config_file, path, confirm_scripts=False)
+    return path
+
+
+def write_config(config_file: Path, profiles_dir: Path, *, confirm_scripts: bool):
+    config_file.parent.mkdir(parents=True, exist_ok=True)
+    config_file.write_text(
+        f'[seed]\nprofiles_dir = "{profiles_dir}"\n\n'
+        f"[settings]\nconfirm_scripts = {str(confirm_scripts).lower()}\n"
+    )
+
+
+def make_profile(
+    profiles_dir: Path,
+    name: str,
+    toml: str = "",
+    templates: dict[str, str] | None = None,
+    scripts: dict[str, str] | None = None,
+) -> Path:
+    """A profile: its profile.toml, templates and scripts."""
+    path = profiles_dir / name
+    path.mkdir()
+    (path / "profile.toml").write_text(f'[profile]\nname = "{name}"\n{toml}')
+    for rel_path, content in (templates or {}).items():
+        dest = path / "templates" / rel_path
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_text(content)
+    for rel_path, content in (scripts or {}).items():
+        dest = path / "scripts" / rel_path
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_text(content)
+        dest.chmod(0o755)
+    return path
 
 
 @pytest.mark.integration
-@pytest.mark.usefixtures("restore_cwd")
-class TestSeedCommandBuiltin:
-    """Tests for seed command with built-in templates."""
+class TestSeedBuiltin:
+    """Without a profile: the files shipped with abilian-devtools."""
 
-    def test_seed_builtin_creates_files(self):
-        """Test that seed creates files from built-in templates."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            os.chdir(tmpdir)
+    def test_creates_the_builtin_files(self, project: Path) -> None:
+        adt("seed", "-y")
 
-            # Mock load_config to return empty config (triggers builtin fallback)
-            with patch("abilian_devtools.commands.seed.load_config") as mock_config:
-                mock_config.return_value = ADTConfig()
+        assert files_in(project) == BUILTIN_FILES
 
-                cmd = create_seed_command()
-                cmd.run(yes=True)  # Skip interactive prompts
+    def test_dry_run_creates_nothing(self, project: Path) -> None:
+        adt("seed", "-n")
 
-            # Check that at least some files were created
-            created_files = list(Path(tmpdir).iterdir())
-            assert len(created_files) > 0
+        assert files_in(project) == set()
 
-    def test_seed_builtin_dry_run(self):
-        """Test that dry run doesn't create files."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            os.chdir(tmpdir)
+    def test_existing_files_are_kept(self, project: Path, capsys) -> None:
+        (project / ".gitignore").write_text("existing content")
 
-            with patch("abilian_devtools.commands.seed.load_config") as mock_config:
-                mock_config.return_value = ADTConfig()
+        adt("seed", "-y")
 
-                cmd = create_seed_command()
-                cmd.run(dry_run=True)
-
-            # No files should be created
-            created_files = [f for f in Path(tmpdir).iterdir() if f.name != "."]
-            # Only directories might be empty
-            assert all(f.is_dir() for f in created_files) or len(created_files) == 0
-
-    def test_seed_builtin_skips_existing_files(self, capsys):
-        """Test that existing files are skipped."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            os.chdir(tmpdir)
-
-            # Create an existing file
-            existing = Path(tmpdir) / ".gitignore"
-            existing.write_text("existing content")
-
-            with patch("abilian_devtools.commands.seed.load_config") as mock_config:
-                mock_config.return_value = ADTConfig()
-
-                cmd = create_seed_command()
-                cmd.run(yes=True)  # Skip interactive prompts
-
-            # File should still have original content
-            assert existing.read_text() == "existing content"
-
-            # Should show skip message
-            captured = capsys.readouterr()
-            assert "skip" in captured.out
+        assert (project / ".gitignore").read_text() == "existing content"
+        assert files_in(project) == BUILTIN_FILES
+        assert "skip .gitignore (exists)" in capsys.readouterr().out
 
 
 @pytest.mark.integration
-@pytest.mark.usefixtures("restore_cwd")
-class TestSeedCommandWithProfile:
-    """Tests for seed command with profile-based seeding."""
+class TestSeedWithProfile:
+    @pytest.fixture(autouse=True)
+    def profile(self, profiles_dir: Path) -> Path:
+        return make_profile(
+            profiles_dir,
+            "test-profile",
+            'description = "A test profile"\n\n'
+            '[variables]\nauthor = "Test Author"\nyear = 2025\n',
+            templates={
+                "README.txt": "Plain readme",
+                "LICENSE.j2": "Copyright {{ year }} {{ author }}\n",
+            },
+        )
+
+    def test_creates_and_renders_the_files(self, project: Path) -> None:
+        adt("seed", "-p", "test-profile", "-y")
+
+        assert files_in(project) == {"README.txt", "LICENSE"}
+        assert (project / "README.txt").read_text() == "Plain readme"
+        assert (project / "LICENSE").read_text() == "Copyright 2025 Test Author\n"
+
+    def test_dry_run_creates_nothing(self, project: Path, capsys) -> None:
+        adt("seed", "-p", "test-profile", "-n", "-y")
+
+        assert files_in(project) == set()
+        assert "would create README.txt" in capsys.readouterr().out
+
+    def test_overwrite_replaces_existing_files(self, project: Path) -> None:
+        (project / "README.txt").write_text("old content")
+
+        adt("seed", "-p", "test-profile", "-o", "-y")
+
+        assert (project / "README.txt").read_text() == "Plain readme"
+
+    def test_a_cli_variable_wins(self, project: Path) -> None:
+        adt("seed", "-p", "test-profile", "-y", "-v", "author=Someone Else")
+
+        assert (project / "LICENSE").read_text() == "Copyright 2025 Someone Else\n"
+
+    def test_a_variable_without_a_value_is_an_error(self, project, capsys) -> None:
+        adt_fails("seed", "-p", "test-profile", "-y", "-v", "author")
+
+        assert "'author' has no value" in capsys.readouterr().err
+        assert files_in(project) == set()
+
+    def test_an_unknown_profile_is_an_error(self, project: Path, capsys) -> None:
+        """Not a reason to seed the built-in files instead."""
+        adt_fails("seed", "-p", "test-profil", "-y")
+
+        assert "'test-profil' not found" in capsys.readouterr().err
+        assert files_in(project) == set()
+
+    def test_lists_the_profiles(self, project: Path, capsys) -> None:
+        adt("seed", "--list")
+
+        assert "test-profile: A test profile" in capsys.readouterr().out
+
+    def test_shows_a_profiles_info(self, project: Path, capsys) -> None:
+        adt("seed", "--info", "test-profile")
+
+        out = capsys.readouterr().out
+        assert "Profile: test-profile" in out
+        assert "A test profile" in out
+        assert "author = Test Author" in out
+
+    def test_info_on_an_unknown_profile_is_an_error(self, project, capsys) -> None:
+        adt_fails("seed", "--info", "nope")
+
+        assert "Profile not found: nope" in capsys.readouterr().err
+
+
+@pytest.mark.integration
+class TestSeedFailures:
+    """A file or script that fails: the others are seeded, and seed exits 1."""
+
+    def test_a_template_error(self, project: Path, profiles_dir: Path) -> None:
+        make_profile(
+            profiles_dir,
+            "broken",
+            templates={"bad.txt.j2": "{{ unclosed", "good.txt": "fine"},
+        )
+
+        adt_fails("seed", "-p", "broken", "-y")
+
+        assert files_in(project) == {"good.txt"}
+
+    def test_a_condition_that_cant_be_evaluated(self, project, profiles_dir) -> None:
+        make_profile(
+            profiles_dir,
+            "typo",
+            "[variables]\nuse_docker = true\n\n"
+            '[files]\n"Dockerfile" = { dest = "Dockerfile", condition = "use_dockr" }\n'
+            '"good.txt" = "good.txt"\n',
+            templates={"Dockerfile": "FROM python", "good.txt": "fine"},
+        )
+
+        adt_fails("seed", "-p", "typo", "-y")
+
+        assert files_in(project) == {"good.txt"}
+
+    def test_a_failing_script(self, project: Path, profiles_dir: Path) -> None:
+        make_profile(
+            profiles_dir,
+            "failing",
+            templates={"file.txt": "content"},
+            scripts={"01-fail.sh": "#!/bin/sh\nexit 3\n"},
+        )
+
+        adt_fails("seed", "-p", "failing", "-y")
+
+        assert files_in(project) == {"file.txt"}
+
+
+@pytest.mark.integration
+class TestSeedProfileFeatures:
+    def test_inherited_files_are_seeded(self, project, profiles_dir) -> None:
+        make_profile(profiles_dir, "base", templates={"base.txt": "from base"})
+        make_profile(
+            profiles_dir,
+            "child",
+            'extends = ["base"]\n',
+            templates={"child.txt": "from child"},
+        )
+
+        adt("seed", "-p", "child", "-y")
+
+        assert files_in(project) == {"base.txt", "child.txt"}
+
+    def test_resolves_the_variables(self, project, profiles_dir) -> None:
+        make_profile(
+            profiles_dir,
+            "vars",
+            '[variables]\nprofile_var = "from_profile"\n',
+            templates={
+                "vars.txt.j2": "Project: {{ project_name }}\n"
+                "Version: {{ project_version }}\n"
+                "Year: {{ current_year }}\n"
+                "Profile Var: {{ profile_var }}\n"
+                "Has Src: {{ has_src_layout }}\n"
+            },
+        )
+        (project / "pyproject.toml").write_text(
+            '[project]\nname = "my-awesome-project"\nversion = "2.5.0"\n'
+        )
+        (project / "src").mkdir()
+        year = datetime.now().year  # seed's current_year: the local date
+
+        adt("seed", "-p", "vars", "-y")
+
+        assert (project / "vars.txt").read_text() == (
+            "Project: my-awesome-project\n"
+            "Version: 2.5.0\n"
+            f"Year: {year}\n"
+            "Profile Var: from_profile\n"
+            "Has Src: True\n"
+        )
+
+    def test_creates_nested_directories(self, project, profiles_dir) -> None:
+        make_profile(
+            profiles_dir,
+            "nested",
+            templates={
+                "root.txt": "root file",
+                "subdir/nested.txt": "nested file",
+                "subdir/deep/deep.txt": "deep file",
+            },
+        )
+
+        adt("seed", "-p", "nested", "-y")
+
+        assert files_in(project) == {
+            "root.txt",
+            "subdir/nested.txt",
+            "subdir/deep/deep.txt",
+        }
+
+
+@pytest.mark.integration
+class TestSeedScripts:
+    SCRIPT = (
+        "#!/bin/sh\n"
+        'echo "ADT_PROFILE=$ADT_PROFILE" > script_ran.txt\n'
+        'echo "CUSTOM_VAR=$CUSTOM_VAR" >> script_ran.txt\n'
+    )
 
     @pytest.fixture
-    def profile_setup(self):
-        """Create a temporary profile and project directory."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            tmpdir = Path(tmpdir).resolve()
+    def with_scripts(self, profiles_dir: Path) -> Path:
+        return make_profile(
+            profiles_dir,
+            "with-scripts",
+            '[scripts]\npost_seed = ["scripts/01-setup.sh"]\n\n'
+            '[scripts.env]\nCUSTOM_VAR = "custom-value"\n',
+            templates={"README.txt": "readme"},
+            scripts={"01-setup.sh": self.SCRIPT},
+        )
 
-            # Create profiles directory with test-profile
-            profiles_dir = tmpdir / "profiles"
-            profile_dir = profiles_dir / "test-profile"
-            profile_dir.mkdir(parents=True)
+    @pytest.mark.usefixtures("with_scripts")
+    def test_runs_the_scripts(self, project: Path) -> None:
+        adt("seed", "-p", "with-scripts", "-y")
 
-            # Create profile.toml
-            (profile_dir / "profile.toml").write_text("""
-[profile]
-name = "test-profile"
-description = "A test profile"
-version = "1.0.0"
+        assert (project / "script_ran.txt").read_text() == (
+            "ADT_PROFILE=with-scripts\nCUSTOM_VAR=custom-value\n"
+        )
 
-[variables]
-author = "Test Author"
-year = 2025
-""")
+    @pytest.mark.usefixtures("with_scripts")
+    def test_scripts_declined_dont_run(
+        self, project, profiles_dir, global_config_file, monkeypatch
+    ) -> None:
+        write_config(global_config_file, profiles_dir, confirm_scripts=True)
+        answers = iter(["y", "n"])  # create README.txt, run the scripts
+        monkeypatch.setattr("builtins.input", lambda _: next(answers))
 
-            # Create templates directory
-            templates_dir = profile_dir / "templates"
-            templates_dir.mkdir()
+        adt("seed", "-p", "with-scripts")
 
-            # Create a plain template
-            (templates_dir / "README.txt").write_text("Plain readme")
+        assert files_in(project) == {"README.txt"}
 
-            # Create a Jinja2 template
-            (templates_dir / "LICENSE.j2").write_text("""
-Copyright {{ year }} {{ author }}
-MIT License
-""")
+    @pytest.mark.usefixtures("with_scripts")
+    def test_dry_run_runs_no_script(self, project: Path) -> None:
+        adt("seed", "-p", "with-scripts", "-n")
 
-            # Create project directory
-            project_dir = tmpdir / "project"
-            project_dir.mkdir()
+        assert files_in(project) == set()
 
-            # Create config with profiles_dir
-            config = ADTConfig(profiles_dir=profiles_dir)
+    def test_scripts_are_discovered_in_order(self, project, profiles_dir) -> None:
+        make_profile(
+            profiles_dir,
+            "auto-scripts",
+            templates={"file.txt": "content"},
+            scripts={
+                name: f"#!/bin/sh\necho '{name}' >> order.txt\n"
+                for name in ["02-second.sh", "01-first.sh"]
+            },
+        )
 
-            yield {
-                "profile_dir": profile_dir,
-                "profiles_dir": profiles_dir,
-                "project_dir": project_dir,
-                "config": config,
-            }
+        adt("seed", "-p", "auto-scripts", "-y")
 
-    def test_seed_with_profile(self, profile_setup, capsys):
-        """Test seeding with a profile creates expected files."""
-        project_dir = profile_setup["project_dir"]
-        config = profile_setup["config"]
+        assert (project / "order.txt").read_text() == "01-first.sh\n02-second.sh\n"
 
-        os.chdir(project_dir)
+    def test_a_scripts_condition_is_honoured(self, project, profiles_dir) -> None:
+        make_profile(
+            profiles_dir,
+            "conditional",
+            "[variables]\nrun_script = false\n\n"
+            "[scripts]\npost_seed = [\n"
+            '  { script = "scripts/conditional.sh", condition = "run_script" }\n]\n',
+            templates={"file.txt": "content"},
+            scripts={"conditional.sh": "#!/bin/sh\necho ran > ran.txt\n"},
+        )
 
-        with patch("abilian_devtools.commands.seed.load_config") as mock_config:
-            mock_config.return_value = config
+        adt("seed", "-p", "conditional", "-y")
 
-            cmd = create_seed_command()
-            cmd.run(profile="test-profile", yes=True)
-
-        # Check files were created
-        assert (project_dir / "README.txt").exists()
-        assert (project_dir / "LICENSE").exists()  # .j2 stripped
-
-        # Check plain file content
-        assert (project_dir / "README.txt").read_text() == "Plain readme"
-
-        # Check rendered template content
-        license_content = (project_dir / "LICENSE").read_text()
-        assert "2025" in license_content
-        assert "Test Author" in license_content
-
-    def test_seed_with_profile_dry_run(self, profile_setup, capsys):
-        """Test dry run with profile shows what would be done."""
-        project_dir = profile_setup["project_dir"]
-        config = profile_setup["config"]
-
-        os.chdir(project_dir)
-
-        with patch("abilian_devtools.commands.seed.load_config") as mock_config:
-            mock_config.return_value = config
-
-            cmd = create_seed_command()
-            cmd.run(profile="test-profile", dry_run=True, yes=True)
-
-        # Files should not be created
-        assert not (project_dir / "README.txt").exists()
-        assert not (project_dir / "LICENSE").exists()
-
-        # Should show "would create" messages
-        captured = capsys.readouterr()
-        assert "would create" in captured.out
-
-    def test_seed_with_profile_overwrite(self, profile_setup):
-        """Test overwrite mode replaces existing files."""
-        project_dir = profile_setup["project_dir"]
-        config = profile_setup["config"]
-
-        os.chdir(project_dir)
-
-        # Create existing file
-        (project_dir / "README.txt").write_text("old content")
-
-        with patch("abilian_devtools.commands.seed.load_config") as mock_config:
-            mock_config.return_value = config
-
-            cmd = create_seed_command()
-            cmd.run(profile="test-profile", overwrite=True, yes=True)
-
-        # File should have new content
-        assert (project_dir / "README.txt").read_text() == "Plain readme"
-
-    def test_seed_list_profiles(self, profile_setup, capsys):
-        """Test listing available profiles."""
-        config = profile_setup["config"]
-
-        with patch("abilian_devtools.commands.seed.load_config") as mock_config:
-            mock_config.return_value = config
-
-            cmd = create_seed_command()
-            cmd.run(list=True)
-
-        captured = capsys.readouterr()
-        assert "test-profile" in captured.out
-        assert "A test profile" in captured.out
-
-    def test_seed_info_profile(self, profile_setup, capsys):
-        """Test showing profile information."""
-        config = profile_setup["config"]
-
-        with patch("abilian_devtools.commands.seed.load_config") as mock_config:
-            mock_config.return_value = config
-
-            cmd = create_seed_command()
-            cmd.run(info="test-profile")
-
-        captured = capsys.readouterr()
-        assert "test-profile" in captured.out
-        assert "A test profile" in captured.out
-        assert "author" in captured.out
-        assert "Test Author" in captured.out
+        assert files_in(project) == {"file.txt"}
 
 
 @pytest.mark.integration
-@pytest.mark.usefixtures("restore_cwd")
-class TestSeedCommandWithInheritance:
-    """Tests for seed command with profile inheritance."""
+class TestSeedInteractive:
+    @pytest.fixture(autouse=True)
+    def profile(self, profiles_dir: Path) -> Path:
+        return make_profile(
+            profiles_dir,
+            "interactive",
+            templates={f"file{i}.txt": f"content{i}" for i in (1, 2, 3)},
+        )
 
-    @pytest.fixture
-    def inheritance_setup(self):
-        """Create profiles with inheritance chain."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            tmpdir = Path(tmpdir).resolve()
+    def test_prompts_for_each_file(self, project: Path, monkeypatch) -> None:
+        answers = iter(["n", "y", "n"])
+        monkeypatch.setattr("builtins.input", lambda _: next(answers))
 
-            # Create profiles directory
-            profiles_dir = tmpdir / "profiles"
+        adt("seed", "-p", "interactive")
 
-            # Create base profile
-            base_dir = profiles_dir / "base"
-            base_dir.mkdir(parents=True)
-            (base_dir / "profile.toml").write_text("""
-[profile]
-name = "base"
+        assert files_in(project) == {"file2.txt"}
 
-[variables]
-license = "MIT"
-""")
-            (base_dir / "templates").mkdir()
-            (base_dir / "templates" / "base.txt").write_text("from base")
+    def test_all_accepts_the_remaining_files(self, project, monkeypatch) -> None:
+        answers = iter(["n", "a"])
+        monkeypatch.setattr("builtins.input", lambda _: next(answers))
 
-            # Create child profile
-            child_dir = profiles_dir / "child"
-            child_dir.mkdir(parents=True)
-            (child_dir / "profile.toml").write_text("""
-[profile]
-name = "child"
-extends = ["base"]
+        adt("seed", "-p", "interactive")
 
-[variables]
-author = "Child Author"
-""")
-            (child_dir / "templates").mkdir()
-            (child_dir / "templates" / "child.txt").write_text("from child")
-
-            # Create project directory
-            project_dir = tmpdir / "project"
-            project_dir.mkdir()
-
-            config = ADTConfig(profiles_dir=profiles_dir)
-
-            yield {
-                "base_dir": base_dir,
-                "child_dir": child_dir,
-                "profiles_dir": profiles_dir,
-                "project_dir": project_dir,
-                "config": config,
-            }
-
-    def test_seed_with_inheritance(self, inheritance_setup):
-        """Test seeding with inherited profile includes base files."""
-        project_dir = inheritance_setup["project_dir"]
-        config = inheritance_setup["config"]
-
-        os.chdir(project_dir)
-
-        with patch("abilian_devtools.commands.seed.load_config") as mock_config:
-            mock_config.return_value = config
-
-            cmd = create_seed_command()
-            cmd.run(profile="child", yes=True)
-
-        # Both base and child files should be created
-        assert (project_dir / "base.txt").exists()
-        assert (project_dir / "child.txt").exists()
-
-
-@pytest.mark.integration
-@pytest.mark.usefixtures("restore_cwd")
-class TestSeedCommandVariableResolution:
-    """Tests for variable resolution in seed command."""
-
-    @pytest.fixture
-    def variable_setup(self):
-        """Create a profile with various template variables."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            tmpdir = Path(tmpdir).resolve()
-
-            # Create profiles directory
-            profiles_dir = tmpdir / "profiles"
-
-            # Create profile
-            profile_dir = profiles_dir / "vars"
-            profile_dir.mkdir(parents=True)
-            (profile_dir / "profile.toml").write_text("""
-[profile]
-name = "vars"
-
-[variables]
-profile_var = "from_profile"
-""")
-            (profile_dir / "templates").mkdir()
-            (profile_dir / "templates" / "vars.txt.j2").write_text("""
-Project: {{ project_name }}
-Version: {{ project_version }}
-Year: {{ current_year }}
-Profile Var: {{ profile_var }}
-Has Src: {{ has_src_layout }}
-""")
-
-            # Create project directory with pyproject.toml
-            project_dir = tmpdir / "project"
-            project_dir.mkdir()
-            (project_dir / "pyproject.toml").write_text("""
-[project]
-name = "my-awesome-project"
-version = "2.5.0"
-""")
-            (project_dir / "src").mkdir()
-
-            config = ADTConfig(profiles_dir=profiles_dir)
-
-            yield {
-                "profile_dir": profile_dir,
-                "profiles_dir": profiles_dir,
-                "project_dir": project_dir,
-                "config": config,
-            }
-
-    def test_seed_resolves_all_variables(self, variable_setup):
-        """Test that all variable sources are resolved correctly."""
-        project_dir = variable_setup["project_dir"]
-        config = variable_setup["config"]
-
-        os.chdir(project_dir)
-
-        with patch("abilian_devtools.commands.seed.load_config") as mock_config:
-            mock_config.return_value = config
-
-            cmd = create_seed_command()
-            cmd.run(profile="vars", yes=True)
-
-        content = (project_dir / "vars.txt").read_text()
-
-        # Check computed variables
-        assert "Project: my-awesome-project" in content
-        assert "Version: 2.5.0" in content
-        assert f"Year: {2025}" in content or f"Year: {2026}" in content  # Current year
-
-        # Check profile variable
-        assert "Profile Var: from_profile" in content
-
-        # Check layout detection
-        assert "Has Src: True" in content
-
-
-@pytest.mark.integration
-@pytest.mark.usefixtures("restore_cwd")
-class TestSeedCommandNestedTemplates:
-    """Tests for nested template directories."""
-
-    def test_seed_creates_nested_directories(self):
-        """Test that nested template directories are created."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            tmpdir = Path(tmpdir).resolve()
-
-            # Create profiles directory
-            profiles_dir = tmpdir / "profiles"
-
-            # Create profile with nested templates
-            profile_dir = profiles_dir / "nested"
-            profile_dir.mkdir(parents=True)
-            (profile_dir / "profile.toml").write_text("""
-[profile]
-name = "nested"
-""")
-
-            templates_dir = profile_dir / "templates"
-            templates_dir.mkdir()
-            (templates_dir / "root.txt").write_text("root file")
-            (templates_dir / "subdir").mkdir()
-            (templates_dir / "subdir" / "nested.txt").write_text("nested file")
-            (templates_dir / "subdir" / "deep").mkdir()
-            (templates_dir / "subdir" / "deep" / "deep.txt").write_text("deep file")
-
-            # Create project directory
-            project_dir = tmpdir / "project"
-            project_dir.mkdir()
-
-            config = ADTConfig(profiles_dir=profiles_dir)
-
-            os.chdir(project_dir)
-
-            with patch("abilian_devtools.commands.seed.load_config") as mock_config:
-                mock_config.return_value = config
-
-                cmd = create_seed_command()
-                cmd.run(profile="nested", yes=True)
-
-            # Check all files were created with correct structure
-            assert (project_dir / "root.txt").exists()
-            assert (project_dir / "subdir" / "nested.txt").exists()
-            assert (project_dir / "subdir" / "deep" / "deep.txt").exists()
-
-
-@pytest.mark.integration
-@pytest.mark.usefixtures("restore_cwd")
-class TestSeedCommandScripts:
-    """Tests for seed command script execution."""
-
-    @pytest.fixture
-    def script_setup(self):
-        """Create a profile with scripts."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            tmpdir = Path(tmpdir).resolve()
-
-            # Create profiles directory
-            profiles_dir = tmpdir / "profiles"
-            profile_dir = profiles_dir / "with-scripts"
-            profile_dir.mkdir(parents=True)
-
-            # Create profile.toml
-            (profile_dir / "profile.toml").write_text("""
-[profile]
-name = "with-scripts"
-description = "Profile with scripts"
-
-[scripts]
-post_seed = ["scripts/01-setup.sh"]
-
-[scripts.env]
-CUSTOM_VAR = "custom-value"
-""")
-
-            # Create templates directory
-            templates_dir = profile_dir / "templates"
-            templates_dir.mkdir()
-            (templates_dir / "README.txt").write_text("readme")
-
-            # Create scripts directory
-            scripts_dir = profile_dir / "scripts"
-            scripts_dir.mkdir()
-
-            # Create a script that writes to a marker file
-            script_content = """#!/bin/bash
-echo "Script executed" > script_executed.txt
-echo "ADT_PROFILE=$ADT_PROFILE" >> script_executed.txt
-echo "CUSTOM_VAR=$CUSTOM_VAR" >> script_executed.txt
-"""
-            script_path = scripts_dir / "01-setup.sh"
-            script_path.write_text(script_content)
-            script_path.chmod(0o755)
-
-            # Create project directory
-            project_dir = tmpdir / "project"
-            project_dir.mkdir()
-
-            config = ADTConfig(profiles_dir=profiles_dir, confirm_scripts=False)
-
-            yield {
-                "profile_dir": profile_dir,
-                "profiles_dir": profiles_dir,
-                "project_dir": project_dir,
-                "config": config,
-            }
-
-    def test_seed_runs_scripts(self, script_setup):
-        """Test that scripts are executed after seeding."""
-        project_dir = script_setup["project_dir"]
-        config = script_setup["config"]
-
-        os.chdir(project_dir)
-
-        with patch("abilian_devtools.commands.seed.load_config") as mock_config:
-            mock_config.return_value = config
-
-            cmd = create_seed_command()
-            cmd.run(profile="with-scripts", yes=True)
-
-        # Check that script ran (created marker file)
-        marker_file = project_dir / "script_executed.txt"
-        assert marker_file.exists()
-
-        content = marker_file.read_text()
-        assert "Script executed" in content
-        assert "ADT_PROFILE=with-scripts" in content
-        assert "CUSTOM_VAR=custom-value" in content
-
-    def test_seed_scripts_with_confirmation_skip(self, script_setup, monkeypatch):
-        """Test that scripts are skipped when user declines confirmation."""
-        project_dir = script_setup["project_dir"]
-        config = script_setup["config"]
-        config.confirm_scripts = True  # Enable confirmation
-
-        os.chdir(project_dir)
-
-        # Simulate user declining
-        monkeypatch.setattr("builtins.input", lambda _: "n")
-
-        with patch("abilian_devtools.commands.seed.load_config") as mock_config:
-            mock_config.return_value = config
-
-            cmd = create_seed_command()
-            cmd.run(profile="with-scripts")
-
-        # Script should NOT have run
-        marker_file = project_dir / "script_executed.txt"
-        assert not marker_file.exists()
-
-    def test_seed_scripts_auto_discovered(self):
-        """Test that scripts in scripts/ directory are auto-discovered."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            tmpdir = Path(tmpdir).resolve()
-
-            # Create profile with auto-discovered scripts
-            profiles_dir = tmpdir / "profiles"
-            profile_dir = profiles_dir / "auto-scripts"
-            profile_dir.mkdir(parents=True)
-
-            (profile_dir / "profile.toml").write_text("""
-[profile]
-name = "auto-scripts"
-""")
-
-            templates_dir = profile_dir / "templates"
-            templates_dir.mkdir()
-            (templates_dir / "file.txt").write_text("content")
-
-            scripts_dir = profile_dir / "scripts"
-            scripts_dir.mkdir()
-
-            # Create multiple scripts (should be sorted alphabetically)
-            for _i, name in enumerate(["02-second.sh", "01-first.sh"]):
-                script = scripts_dir / name
-                script.write_text(
-                    f"#!/bin/bash\necho '{name}' >> execution_order.txt\n"
-                )
-                script.chmod(0o755)
-
-            project_dir = tmpdir / "project"
-            project_dir.mkdir()
-
-            config = ADTConfig(profiles_dir=profiles_dir, confirm_scripts=False)
-
-            os.chdir(project_dir)
-
-            with patch("abilian_devtools.commands.seed.load_config") as mock_config:
-                mock_config.return_value = config
-
-                cmd = create_seed_command()
-                cmd.run(profile="auto-scripts", yes=True)
-
-            # Check execution order (alphabetical)
-            order_file = project_dir / "execution_order.txt"
-            assert order_file.exists()
-            lines = order_file.read_text().strip().split("\n")
-            assert lines == ["01-first.sh", "02-second.sh"]
-
-    def test_seed_scripts_with_condition(self):
-        """Test that script conditions are evaluated."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            tmpdir = Path(tmpdir).resolve()
-
-            profiles_dir = tmpdir / "profiles"
-            profile_dir = profiles_dir / "conditional"
-            profile_dir.mkdir(parents=True)
-
-            (profile_dir / "profile.toml").write_text("""
-[profile]
-name = "conditional"
-
-[variables]
-run_script = false
-
-[scripts]
-post_seed = [
-    { script = "scripts/conditional.sh", condition = "run_script" }
-]
-""")
-
-            templates_dir = profile_dir / "templates"
-            templates_dir.mkdir()
-            (templates_dir / "file.txt").write_text("content")
-
-            scripts_dir = profile_dir / "scripts"
-            scripts_dir.mkdir()
-            script = scripts_dir / "conditional.sh"
-            script.write_text("#!/bin/bash\necho 'ran' > conditional_ran.txt\n")
-            script.chmod(0o755)
-
-            project_dir = tmpdir / "project"
-            project_dir.mkdir()
-
-            config = ADTConfig(profiles_dir=profiles_dir, confirm_scripts=False)
-
-            os.chdir(project_dir)
-
-            with patch("abilian_devtools.commands.seed.load_config") as mock_config:
-                mock_config.return_value = config
-
-                cmd = create_seed_command()
-                cmd.run(profile="conditional", yes=True)
-
-            # Script should NOT have run (condition is false)
-            assert not (project_dir / "conditional_ran.txt").exists()
-
-    def test_seed_dry_run_skips_scripts(self, script_setup):
-        """Test that dry run mode doesn't execute scripts."""
-        project_dir = script_setup["project_dir"]
-        config = script_setup["config"]
-
-        os.chdir(project_dir)
-
-        with patch("abilian_devtools.commands.seed.load_config") as mock_config:
-            mock_config.return_value = config
-
-            cmd = create_seed_command()
-            cmd.run(profile="with-scripts", dry_run=True)
-
-        # Script should NOT have run
-        marker_file = project_dir / "script_executed.txt"
-        assert not marker_file.exists()
-
-
-@pytest.mark.integration
-@pytest.mark.usefixtures("restore_cwd")
-class TestSeedCommandInteractive:
-    """Tests for seed command interactive confirmation."""
-
-    def test_seed_prompts_for_each_file(self, monkeypatch):
-        """Test that seed prompts for each file by default."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            tmpdir = Path(tmpdir).resolve()
-
-            # Create profile
-            profiles_dir = tmpdir / "profiles"
-            profile_dir = profiles_dir / "interactive"
-            profile_dir.mkdir(parents=True)
-            (profile_dir / "profile.toml").write_text("""
-[profile]
-name = "interactive"
-""")
-            templates_dir = profile_dir / "templates"
-            templates_dir.mkdir()
-            (templates_dir / "file1.txt").write_text("content1")
-            (templates_dir / "file2.txt").write_text("content2")
-
-            project_dir = tmpdir / "project"
-            project_dir.mkdir()
-
-            config = ADTConfig(profiles_dir=profiles_dir, confirm_scripts=False)
-
-            os.chdir(project_dir)
-
-            # Simulate user declining first file, accepting second
-            # Note: file order may vary, so we just check that only one file is created
-            responses = iter(["n", "y"])
-            monkeypatch.setattr("builtins.input", lambda _: next(responses))
-
-            with patch("abilian_devtools.commands.seed.load_config") as mock_config:
-                mock_config.return_value = config
-
-                cmd = create_seed_command()
-                cmd.run(profile="interactive")
-
-            # Exactly one file should be created (user said n, then y)
-            created_files = list(project_dir.glob("*.txt"))
-            assert len(created_files) == 1
-
-    def test_seed_accept_all_option(self, monkeypatch):
-        """Test that 'a' accepts all remaining files."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            tmpdir = Path(tmpdir).resolve()
-
-            # Create profile
-            profiles_dir = tmpdir / "profiles"
-            profile_dir = profiles_dir / "accept-all"
-            profile_dir.mkdir(parents=True)
-            (profile_dir / "profile.toml").write_text("""
-[profile]
-name = "accept-all"
-""")
-            templates_dir = profile_dir / "templates"
-            templates_dir.mkdir()
-            (templates_dir / "file1.txt").write_text("content1")
-            (templates_dir / "file2.txt").write_text("content2")
-            (templates_dir / "file3.txt").write_text("content3")
-
-            project_dir = tmpdir / "project"
-            project_dir.mkdir()
-
-            config = ADTConfig(profiles_dir=profiles_dir, confirm_scripts=False)
-
-            os.chdir(project_dir)
-
-            # Simulate user selecting "a" (all) on first file
-            monkeypatch.setattr("builtins.input", lambda _: "a")
-
-            with patch("abilian_devtools.commands.seed.load_config") as mock_config:
-                mock_config.return_value = config
-
-                cmd = create_seed_command()
-                cmd.run(profile="accept-all")
-
-            # All files should be created
-            assert (project_dir / "file1.txt").exists()
-            assert (project_dir / "file2.txt").exists()
-            assert (project_dir / "file3.txt").exists()
+        assert files_in(project) == {"file2.txt", "file3.txt"}

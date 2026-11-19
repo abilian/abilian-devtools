@@ -13,11 +13,16 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 import tomlkit
+import tomlkit.exceptions
 
 # Default config locations
 GLOBAL_CONFIG_DIR = Path.home() / ".config" / "adt"
 GLOBAL_CONFIG_FILE = GLOBAL_CONFIG_DIR / "config.toml"
 PROJECT_CONFIG_FILE = ".adt-config.toml"
+
+
+class ConfigError(Exception):
+    """A configuration file that can't be read."""
 
 
 @dataclass
@@ -128,13 +133,15 @@ def _load_config_file(config: ADTConfig, config_path: Path) -> None:
     Args:
         config: Config instance to update
         config_path: Path to TOML config file
+
+    Raises:
+        ConfigError: If the file isn't valid TOML
     """
     try:
-        content = config_path.read_text()
-        data = tomlkit.parse(content)
-    except Exception as e:
-        print(f"Warning: Failed to parse config file {config_path}: {e}")
-        return
+        data = tomlkit.parse(config_path.read_text())
+    except tomlkit.exceptions.ParseError as e:
+        msg = f"config file {config_path} can't be parsed: {e}"
+        raise ConfigError(msg) from e
 
     # Load seed-specific settings
     if "seed" in data:
@@ -154,45 +161,3 @@ def _load_config_file(config: ADTConfig, config_path: Path) -> None:
         settings = data["settings"]
         if "confirm_scripts" in settings:
             config.confirm_scripts = bool(settings["confirm_scripts"])
-
-
-def ensure_config_dir() -> Path:
-    """Ensure the global config directory exists.
-
-    Returns:
-        Path to the config directory
-    """
-    GLOBAL_CONFIG_DIR.mkdir(parents=True, exist_ok=True)
-    return GLOBAL_CONFIG_DIR
-
-
-def get_default_config_template() -> str:
-    """Get a template for a new config file.
-
-    Returns:
-        TOML string with commented example configuration
-    """
-    return """\
-# ADT Configuration
-# Global: ~/.config/adt/config.toml
-# Project: .adt-config.toml
-
-# Seed command settings
-[seed]
-# Default profile when none specified
-# default_profile = "python"
-
-# Base directory for profile lookup by name
-# With this set, "adt seed -p python" looks for python/ in this directory
-# profiles_dir = "~/projects/project-profiles"
-
-# Global variable defaults (lowest priority)
-[variables]
-# author = "Your Name"
-# email = "you@example.com"
-# license = "MIT"
-
-# Behavior settings
-[settings]
-# confirm_scripts = true
-"""

@@ -12,11 +12,7 @@ class AuditCommand(Command):
 
     name = "audit"
 
-    def run(self):
-        run("pip-audit")
-        # TODO: don't assume source dir is src
-        run("bandit -q -c pyproject.toml -r src")
-        # TODO: suppress output on success
-        run("reuse lint")
-        # TODO: Don't run safety check for now, it's too noisy
-        # run("safety check")
+    def run(self) -> None:
+        run(["pip-audit"])
+        run(["bandit", "-q", "-c", "pyproject.toml", "-r", "src"])
+        run(["reuse", "lint"])

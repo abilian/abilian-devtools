@@ -16,13 +16,11 @@ class TestCommand(Command):
     name = "test"
 
     arguments = [
-        Argument("args", nargs="?", help="Files or directories to test"),
+        Argument("args", nargs="*", help="Files or directories to test"),
     ]
 
-    def run(self, args: list[str] | None = None):
+    def run(self, args: list[str] | None = None) -> None:
         print(bold("Running tests..."))
 
-        args = get_targets(args)
-        args_str = " ".join(args)
-
-        run(f"pytest {args_str}")
+        targets = get_targets(args)
+        run(["pytest", *targets])

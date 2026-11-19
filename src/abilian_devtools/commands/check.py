@@ -19,18 +19,14 @@ class CheckCommand(Command):
         Argument("args", nargs="*", help="Files or directories to check"),
     ]
 
-    def run(self, args: list[str] | None = None):
+    def run(self, args: list[str] | None = None) -> None:
         print(bold("Running checks..."))
 
-        args = get_targets(args)
-        args_str = " ".join(args)
+        targets = get_targets(args)
 
-        # Todo: more cases
         if Path("etc").joinpath("ruff.toml").exists():
-            run(f"ruff check -c etc/ruff.toml {args_str}")
+            run(["ruff", "check", "-c", "etc/ruff.toml", *targets])
         else:
-            run(f"ruff check {args_str}")
+            run(["ruff", "check", *targets])
 
-        run(f"vulture --min-confidence 80 {args_str}")
-        # TODO: currently broken
-        # run("deptry .")
+        run(["vulture", "--min-confidence", "80", *targets])

@@ -358,10 +358,9 @@ class TestParseCLIVars:
         result = parse_cli_vars([])
         assert result == {}
 
-    def test_parse_skips_invalid_format(self):
-        """Test that invalid format entries are skipped."""
-        result = parse_cli_vars(["valid=1", "invalid", "also-valid=2"])
-        assert result == {"valid": 1, "also-valid": 2}
+    def test_a_variable_without_a_value_is_an_error(self):
+        with pytest.raises(ValueError, match="'invalid' has no value"):
+            parse_cli_vars(["valid=1", "invalid", "also-valid=2"])
 
     def test_parse_strips_whitespace(self):
         """Test that whitespace is stripped."""

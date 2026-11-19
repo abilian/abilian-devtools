@@ -4,17 +4,21 @@
 import shlex
 import subprocess
 import sys
+from collections.abc import Sequence
 
 from cleez.colors import dim, red
 
 
-def run(cmd, echo=True, warn=False):
+def run(args: Sequence[str], *, echo: bool = True, warn: bool = False) -> int:
+    """Run a program, its arguments given as a list (no shell, no re-splitting).
+
+    On failure, exit with the program's status, unless `warn` is set: then
+    return the status for the caller to act on.
+    """
     if echo:
-        print(dim("> " + cmd))
-    args = shlex.split(cmd)
-    p = subprocess.Popen(args)
-    p.wait()
-    if not warn and p.returncode:
-        print(red(f"failed with error code {p.returncode}"))
-        sys.exit()
-    return p.returncode
+        print(dim("> " + shlex.join(args)))
+    returncode = subprocess.run(args, check=False).returncode
+    if returncode and not warn:
+        print(red(f"{args[0]} failed with exit status {returncode}"))
+        sys.exit(returncode)
+    return returncode

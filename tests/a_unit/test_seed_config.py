@@ -6,11 +6,10 @@
 
 import tempfile
 from pathlib import Path
-from unittest.mock import patch
 
 import pytest
 
-from abilian_devtools.seed.config import ADTConfig, load_config
+from abilian_devtools.seed.config import ADTConfig, ConfigError, load_config
 
 # =============================================================================
 # Tests for ADTConfig defaults
@@ -201,19 +200,22 @@ class TestADTConfigGetProfilePath:
 class TestLoadConfig:
     """Tests for load_config function."""
 
-    def test_load_config_returns_defaults_when_no_config_exists(self):
-        # Arrange
-        with tempfile.TemporaryDirectory() as tmpdir:
-            # Mock the global config file to a non-existent path
-            fake_global = Path(tmpdir) / "nonexistent" / "config.toml"
-            with patch("abilian_devtools.seed.config.GLOBAL_CONFIG_FILE", fake_global):
-                # Act - load config with non-existent paths
-                config = load_config(project_dir=Path(tmpdir))
+    def test_load_config_returns_defaults_when_no_config_exists(self, tmp_path):
+        # The root conftest points the global config at an absent file.
+        config = load_config(project_dir=tmp_path)
 
-                # Assert - should have defaults
-                assert config.default_profile == ""
-                assert config.profiles_dir is None
-                assert config.variables == {}
+        assert config.default_profile == ""
+        assert config.profiles_dir is None
+        assert config.variables == {}
+
+    def test_load_config_reads_the_global_config(self, global_config_file, tmp_path):
+        global_config_file.parent.mkdir()
+        global_config_file.write_text('[seed]\ndefault_profile = "python"\n')
+
+        config = load_config(project_dir=tmp_path)
+
+        assert config.default_profile == "python"
+        assert config.config_path == global_config_file
 
     def test_load_config_reads_explicit_config_path(self):
         # Arrange
@@ -300,16 +302,9 @@ confirm_scripts = false
             # Assert - should have defaults
             assert config.default_profile == ""
 
-    def test_load_config_handles_invalid_toml(self, capsys):
-        # Arrange
-        with tempfile.TemporaryDirectory() as tmpdir:
-            config_file = Path(tmpdir) / "config.toml"
-            config_file.write_text("invalid [ toml content")
+    def test_an_invalid_config_file_is_an_error(self, tmp_path):
+        config_file = tmp_path / "config.toml"
+        config_file.write_text("invalid [ toml content")
 
-            # Act
-            config = load_config(config_path=config_file)
-
-            # Assert - should return defaults with warning
-            assert config.default_profile == ""
-            captured = capsys.readouterr()
-            assert "Warning" in captured.out
+        with pytest.raises(ConfigError, match=str(config_file)):
+            load_config(config_path=config_file)

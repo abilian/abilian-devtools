@@ -19,10 +19,8 @@ class FormatCommand(Command):
         Argument("args", nargs="*", help="Files or directories to format"),
     ]
 
-    def run(self, args: list[str] | None = None):
+    def run(self, args: list[str] | None = None) -> None:
         print(bold("Formatting code..."))
 
-        args = get_targets(args)
-        args_str = " ".join(args)
-
-        run(f"ruff format {args_str}")
+        targets = get_targets(args)
+        run(["ruff", "format", *targets])

@@ -17,7 +17,6 @@ from abilian_devtools.seed.profile import (
     ScriptConfig,
     load_profile,
     resolve_profile_chain,
-    validate_profile,
 )
 
 
@@ -325,10 +324,12 @@ MY_VAR = "my-value"
             profile = load_profile(str(profile_path))
             assert profile.script_env["MY_VAR"] == "my-value"
 
-    def test_load_profile_not_found(self):
+    def test_load_profile_not_found(self, tmp_path):
         """Test load_profile raises error for non-existent profile."""
+        config = ADTConfig(profiles_dir=tmp_path)
+
         with pytest.raises(ProfileError, match="Profile not found"):
-            load_profile("nonexistent-profile-xyz")
+            load_profile("nonexistent-profile-xyz", config)
 
     def test_load_profile_invalid_toml(self):
         """Test load_profile raises error for invalid TOML."""
@@ -583,55 +584,41 @@ extends = ["middle"]
 
 
 @pytest.mark.unit
-class TestValidateProfile:
-    """Tests for validate_profile function."""
+class TestProfileCycles:
+    """A profile chain that extends itself, directly or not."""
 
-    def test_validate_valid_profile(self):
-        """Test validation passes for a valid profile."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            profile_path = Path(tmpdir)
-            templates_dir = profile_path / "templates"
-            templates_dir.mkdir()
-            (templates_dir / "file.txt").write_text("content")
+    @staticmethod
+    def make_profile(profiles_dir: Path, name: str, extends: list[str]) -> Path:
+        path = profiles_dir / name
+        path.mkdir()
+        (path / "profile.toml").write_text(
+            f'[profile]\nname = "{name}"\nextends = {extends!r}\n'
+        )
+        return path
 
-            profile = Profile(name="valid", path=profile_path)
-            errors = validate_profile(profile)
-            assert errors == []
+    def test_a_cycle_is_an_error(self, tmp_path):
+        a = self.make_profile(tmp_path, "a", ["b"])
+        self.make_profile(tmp_path, "b", ["a"])
 
-    def test_validate_missing_name(self):
-        """Test validation fails for missing name."""
-        profile = Profile(name="", path=Path("/tmp"))
-        errors = validate_profile(profile)
-        assert any("name" in e.lower() for e in errors)
+        with pytest.raises(ProfileError, match="Circular profile dependency"):
+            resolve_profile_chain([str(a)], ADTConfig())
 
-    def test_validate_missing_path(self):
-        """Test validation fails for non-existent path."""
-        profile = Profile(name="test", path=Path("/nonexistent/path/xyz"))
-        errors = validate_profile(profile)
-        assert any("path" in e.lower() for e in errors)
+    def test_a_profile_that_extends_itself_is_an_error(self, tmp_path):
+        a = self.make_profile(tmp_path, "a", ["a"])
 
-    def test_validate_empty_templates_dir(self):
-        """Test validation warns about empty templates directory."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            profile_path = Path(tmpdir)
-            templates_dir = profile_path / "templates"
-            templates_dir.mkdir()
-            # Empty templates dir
+        with pytest.raises(ProfileError, match="Circular profile dependency"):
+            resolve_profile_chain([str(a)], ADTConfig())
 
-            profile = Profile(name="test", path=profile_path)
-            errors = validate_profile(profile)
-            assert any("empty" in e.lower() for e in errors)
+    def test_a_shared_base_is_applied_once(self, tmp_path):
+        """A diamond is not a cycle: the base comes once, first."""
+        self.make_profile(tmp_path, "base", [])
+        self.make_profile(tmp_path, "left", ["base"])
+        self.make_profile(tmp_path, "right", ["base"])
+        top = self.make_profile(tmp_path, "top", ["left", "right"])
 
-    def test_validate_missing_script(self):
-        """Test validation fails for missing scripts."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            profile = Profile(
-                name="test",
-                path=Path(tmpdir),
-                scripts=[ScriptConfig(path=Path("/nonexistent/script.sh"))],
-            )
-            errors = validate_profile(profile)
-            assert any("script" in e.lower() for e in errors)
+        chain = resolve_profile_chain([str(top)], ADTConfig())
+
+        assert [p.name for p in chain] == ["base", "left", "right", "top"]
 
 
 @pytest.mark.unit

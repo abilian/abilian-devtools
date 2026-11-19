@@ -8,8 +8,10 @@ import tempfile
 from pathlib import Path
 
 import pytest
+from jinja2.exceptions import SecurityError
 
 from abilian_devtools.seed.template import (
+    ConditionError,
     create_path_exists_func,
     create_pyproject_get,
     create_template_environment,
@@ -566,6 +568,12 @@ class TestRenderTemplate:
         # Assert
         assert result == "Hello World!"
 
+    def test_a_template_cant_reach_python_internals(self):
+        template = "{{ cycler.__init__.__globals__.os.getpid() }}"
+
+        with pytest.raises(SecurityError):
+            render_template(template, {})
+
     def test_renders_with_snake_case_filter(self):
         # Arrange
         template = "{{ name | snake_case }}"
@@ -729,16 +737,23 @@ class TestEvaluateCondition:
         # Assert
         assert result is True
 
-    def test_returns_true_for_invalid_condition(self):
-        # Arrange
-        condition = "invalid syntax !!!"
-        context = {}
+    def test_an_invalid_condition_is_an_error(self):
+        with pytest.raises(ConditionError, match="invalid syntax"):
+            evaluate_condition("invalid syntax !!!", {})
 
-        # Act
-        result = evaluate_condition(condition, context)
+    def test_an_undefined_variable_is_an_error(self):
+        """A misspelt variable must not include, or exclude, the file."""
+        with pytest.raises(ConditionError, match="use_dockr"):
+            evaluate_condition("use_dockr", {"use_docker": False})
 
-        # Assert
-        assert result is True  # Default to True on error
+        with pytest.raises(ConditionError, match="use_dockr"):
+            evaluate_condition("not use_dockr", {"use_docker": False})
+
+    def test_a_condition_cant_reach_python_internals(self):
+        condition = "().__class__.__base__.__subclasses__()"
+
+        with pytest.raises(ConditionError):
+            evaluate_condition(condition, {})
 
     def test_evaluates_equality(self):
         # Arrange

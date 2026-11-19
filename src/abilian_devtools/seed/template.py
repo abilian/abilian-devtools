@@ -12,11 +12,23 @@ from pathlib import Path
 from typing import Any
 
 import tomlkit
-from jinja2 import Environment
+import yaml
+from jinja2 import StrictUndefined, TemplateError
+from jinja2.sandbox import SandboxedEnvironment
 
 
-def create_template_environment(project_dir: Path | None = None) -> Environment:
+class ConditionError(Exception):
+    """A file or script condition that can't be evaluated."""
+
+
+def create_template_environment(
+    project_dir: Path | None = None,
+) -> SandboxedEnvironment:
     """Create a Jinja2 environment with custom filters and globals.
+
+    The environment is sandboxed: a profile's templates and conditions can't
+    reach Python internals, so seeding runs no code from a profile but its
+    scripts, which are confirmed first.
 
     Args:
         project_dir: Project directory for path-relative operations
@@ -25,11 +37,11 @@ def create_template_environment(project_dir: Path | None = None) -> Environment:
         Configured Jinja2 Environment
     """
     # autoescape=False is intentional: we're generating config files, not HTML
-    env = Environment(
+    env = SandboxedEnvironment(
         keep_trailing_newline=True,
         trim_blocks=True,
         lstrip_blocks=True,
-        autoescape=False,  # noqa: S701
+        autoescape=False,
     )
 
     # Add custom filters
@@ -44,9 +56,13 @@ def create_template_environment(project_dir: Path | None = None) -> Environment:
 
     # Add custom global functions
     project_dir = project_dir or Path.cwd()
-    env.globals["pyproject_get"] = create_pyproject_get(project_dir)
-    env.globals["include_if"] = include_if
-    env.globals["path_exists"] = create_path_exists_func(project_dir)
+    # Jinja types its globals as the values it ships with: ours are any.
+    our_globals: dict[str, Any] = {
+        "pyproject_get": create_pyproject_get(project_dir),
+        "include_if": include_if,
+        "path_exists": create_path_exists_func(project_dir),
+    }
+    env.globals.update(our_globals)
 
     return env
 
@@ -140,73 +156,13 @@ def filter_to_yaml(value: Any, *, default_flow_style: bool = False) -> str:
         {{ {"key": "value"} | to_yaml }}
         {{ items | to_yaml }}
     """
-    try:
-        import yaml  # noqa: PLC0415
-
-        result = yaml.dump(
-            value,
-            default_flow_style=default_flow_style,
-            allow_unicode=True,
-            sort_keys=False,
-        )
-        return result.strip()
-    except ImportError:
-        # Fallback: simple representation for common cases
-        return _simple_yaml_dump(value)
-
-
-def _simple_yaml_dump(value: Any, indent: int = 0) -> str:  # noqa: PLR0911
-    """Simple YAML-like dump without PyYAML dependency."""
-    prefix = "  " * indent
-
-    if value is None:
-        return "null"
-    if isinstance(value, bool):
-        return "true" if value else "false"
-    if isinstance(value, str):
-        return _yaml_string(value)
-    if isinstance(value, (int, float)):
-        return str(value)
-    if isinstance(value, dict):
-        return _yaml_dict(value, prefix, indent)
-    if isinstance(value, list):
-        return _yaml_list(value, prefix, indent)
-    return str(value)
-
-
-def _yaml_string(value: str) -> str:
-    """Format string for YAML output."""
-    if any(c in value for c in ":#{}[]&*!|>'\"%@`"):
-        return f'"{value}"'
-    return value
-
-
-def _yaml_dict(value: dict, prefix: str, indent: int) -> str:
-    """Format dict for YAML output."""
-    if not value:
-        return "{}"
-    lines = []
-    for k, v in value.items():
-        if isinstance(v, (dict, list)) and v:
-            lines.append(f"{prefix}{k}:")
-            lines.append(_simple_yaml_dump(v, indent + 1))
-        else:
-            lines.append(f"{prefix}{k}: {_simple_yaml_dump(v)}")
-    return "\n".join(lines)
-
-
-def _yaml_list(value: list, prefix: str, indent: int) -> str:
-    """Format list for YAML output."""
-    if not value:
-        return "[]"
-    lines = []
-    for item in value:
-        if isinstance(item, dict) and item:
-            lines.append(f"{prefix}-")
-            lines.append(_simple_yaml_dump(item, indent + 1))
-        else:
-            lines.append(f"{prefix}- {_simple_yaml_dump(item)}")
-    return "\n".join(lines)
+    result = yaml.dump(
+        value,
+        default_flow_style=default_flow_style,
+        allow_unicode=True,
+        sort_keys=False,
+    )
+    return result.strip()
 
 
 def filter_slugify(value: str, separator: str = "-") -> str:
@@ -341,22 +297,12 @@ def create_pyproject_get(project_dir: Path):
         if not pyproject_path.exists():
             return default
 
-        try:
-            content = pyproject_path.read_text()
-            data = tomlkit.parse(content)
-
-            # Navigate the key path
-            parts = key.split(".")
-            current = data
-            for part in parts:
-                if isinstance(current, dict) and part in current:
-                    current = current[part]
-                else:
-                    return default
-
-            return current  # noqa: TRY300
-        except Exception:
-            return default
+        current: Any = tomlkit.parse(pyproject_path.read_text())
+        for part in key.split("."):
+            if not (isinstance(current, dict) and part in current):
+                return default
+            current = current[part]
+        return current
 
     return pyproject_get
 
@@ -424,7 +370,7 @@ def evaluate_condition(
 ) -> bool:
     """Evaluate a condition expression for conditional file inclusion.
 
-    Supports simple expressions like:
+    A condition is a Jinja2 expression, evaluated in the sandbox:
     - Variable truthiness: "use_docker"
     - Comparison: "python_version >= '3.10'"
     - Path existence: "path_exists('src')"
@@ -438,6 +384,10 @@ def evaluate_condition(
     Returns:
         True if condition evaluates to True
 
+    Raises:
+        ConditionError: If the condition is invalid, or names an undefined
+            variable
+
     Examples:
         evaluate_condition("use_docker", {"use_docker": True})
         evaluate_condition("python_version >= '3.10'", {"python_version": "3.11"})
@@ -445,18 +395,11 @@ def evaluate_condition(
     if not condition:
         return True
 
-    project_dir = project_dir or Path.cwd()
-
-    # Build evaluation context
-    eval_context = {
-        **context,
-        "path_exists": create_path_exists_func(project_dir),
-        "pyproject_get": create_pyproject_get(project_dir),
-    }
-
+    env = create_template_environment(project_dir)
+    env.undefined = StrictUndefined
     try:
-        # Use safe evaluation (no builtins to prevent code injection)
-        return bool(eval(condition, {"__builtins__": {}}, eval_context))  # noqa: S307
-    except Exception:
-        # If evaluation fails, default to True (include file)
-        return True
+        expression = env.compile_expression(condition, undefined_to_none=False)
+        return bool(expression(**context))
+    except TemplateError as e:
+        msg = f"condition {condition!r} can't be evaluated: {e}"
+        raise ConditionError(msg) from e

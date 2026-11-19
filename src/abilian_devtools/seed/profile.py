@@ -53,9 +53,6 @@ class Profile:
     # Variables defined by this profile
     variables: dict[str, str | bool | int] = field(default_factory=dict)
 
-    # Variable metadata (descriptions, types, choices)
-    variables_meta: dict[str, dict] = field(default_factory=dict)
-
     # File mappings (source -> dest)
     file_mappings: list[FileMapping] = field(default_factory=list)
 
@@ -64,9 +61,6 @@ class Profile:
 
     # Script environment variables
     script_env: dict[str, str] = field(default_factory=dict)
-
-    # Conditions for conditional file inclusion
-    conditions: dict[str, str] = field(default_factory=dict)
 
     @property
     def templates_dir(self) -> Path:
@@ -97,7 +91,7 @@ class Profile:
         if not templates_dir.exists():
             return mappings
 
-        for file_path in templates_dir.rglob("*"):
+        for file_path in sorted(templates_dir.rglob("*")):
             if file_path.is_dir():
                 continue
 
@@ -242,15 +236,7 @@ def _parse_profile_data(data: tomlkit.TOMLDocument, path: Path) -> Profile:
 
     # Parse variables
     if "variables" in data:
-        for key, value in data["variables"].items():
-            if key == "meta":
-                continue
-            profile.variables[key] = value
-
-    # Parse variable metadata
-    if "variables" in data and "meta" in data["variables"]:
-        for key, meta in data["variables"]["meta"].items():
-            profile.variables_meta[key] = dict(meta)
+        profile.variables.update(data["variables"])
 
     # Parse file mappings
     if "files" in data:
@@ -268,11 +254,6 @@ def _parse_profile_data(data: tomlkit.TOMLDocument, path: Path) -> Profile:
         if "env" in scripts_section:
             for key, value in scripts_section["env"].items():
                 profile.script_env[key] = str(value)
-
-    # Parse conditions
-    if "conditions" in data:
-        for key, value in data["conditions"].items():
-            profile.conditions[key] = str(value)
 
     return profile
 
@@ -373,21 +354,22 @@ def resolve_profile_chain(
         config = load_config()
 
     resolved: list[Profile] = []
-    seen: set[str] = set()
+    done: set[Path] = set()
+    in_progress: list[Path] = []
     # Track directories to search for sibling profiles
     sibling_dirs: list[Path] = []
 
     def resolve_one(name: str) -> None:
-        if name in seen:
-            return  # Already resolved
-
         profile = _load_profile_with_siblings(name, config, sibling_dirs)
+        key = profile.path.resolve()
+        if key in done:
+            return
+        if key in in_progress:
+            chain = " -> ".join(p.name for p in [*in_progress, key])
+            msg = f"Circular profile dependency: {chain}"
+            raise ProfileError(msg)
 
-        # Check for circular dependency
-        if name in [p.name for p in resolved if p.name not in seen]:
-            raise ProfileError(f"Circular profile dependency detected: {name}")
-
-        seen.add(name)
+        in_progress.append(key)
 
         # Add this profile's parent directory for sibling lookup
         parent_dir = profile.path.parent
@@ -398,6 +380,8 @@ def resolve_profile_chain(
         for parent_name in profile.extends:
             resolve_one(parent_name)
 
+        in_progress.pop()
+        done.add(key)
         resolved.append(profile)
 
     for name in profile_names:
@@ -441,35 +425,3 @@ def _load_profile_with_siblings(
         raise ProfileError(f"Profile not found: {name_or_path}")
 
     return _load_profile_from_path(profile_path)
-
-
-def validate_profile(profile: Profile) -> list[str]:
-    """Validate a profile configuration.
-
-    Args:
-        profile: Profile to validate
-
-    Returns:
-        List of validation error messages (empty if valid)
-    """
-    errors = []
-
-    if not profile.name:
-        errors.append("Profile must have a name")
-
-    if not profile.path.exists():
-        errors.append(f"Profile path does not exist: {profile.path}")
-
-    # Check templates directory
-    templates_dir = profile.templates_dir
-    if templates_dir.exists():
-        template_files = list(templates_dir.rglob("*"))
-        if not any(f.is_file() for f in template_files):
-            errors.append(f"Templates directory is empty: {templates_dir}")
-
-    # Validate scripts exist
-    for script in profile.scripts:
-        if not script.path.exists():
-            errors.append(f"Script not found: {script.path}")
-
-    return errors
