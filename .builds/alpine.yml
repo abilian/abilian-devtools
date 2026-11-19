@@ -1,0 +1,26 @@
+image: alpine/latest
+packages:
+  - uv
+  - gcc
+  - python3-dev
+
+secrets:
+  - b88a4c2c-944c-42a6-9fbb-7483049c458a
+
+sources:
+  - git@git.sr.ht:~sfermigier/abilian-devtools
+
+tasks:
+  - install: |
+      cd abilian-devtools
+      uv sync
+  - test: |
+      cd abilian-devtools
+      uv run pytest -q --tb=short
+  - lint: |
+      cd abilian-devtools
+      uv run ruff check
+      uv run ty check src
+  - nox: |
+      cd abilian-devtools
+      uvx nox
