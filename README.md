@@ -91,6 +91,18 @@ Available commands:
 - **`adt typecheck [paths...]`** — Run the `ty` type checker on the given paths, or on `src` by default.
 
 
+pytest plugin: tests that ignore the machine's settings
+-------------------------------------------------------
+
+A project's tests should read nothing from the developer's machine. A `DEBUG=true` exported by direnv, or a secret in `.env`, can make a test pass there and fail on a build machine. Installed with abilian-devtools, a pytest plugin prevents that for projects whose configuration is a [pydantic-settings](https://docs.pydantic.dev/latest/concepts/pydantic_settings/) class. Name the class in the pytest configuration:
+
+```toml
+[tool.pytest.ini_options]
+settings_class = "app.config:Settings"
+```
+
+Before any `conftest.py` is imported, the plugin removes from the test process's environment every variable the class reads (each field's alias or alias choices, or the prefix and the field's name, matched without regard to case unless the class is case-sensitive), and turns off the class's `.env` file. Each test, or fixture, then sets what it needs. The developer's shell keeps its variables. Without the option, the plugin does nothing.
+
 Why this?
 ---------
 

@@ -46,12 +46,19 @@ Repository = "https://github.com/abilian/abilian-devtools"
 [project.scripts]
 adt = "abilian_devtools.cli:main"
 
+# Loaded by pytest wherever the package is installed; it acts only in a
+# project that names its settings class (see the module).
+[project.entry-points.pytest11]
+abilian_devtools = "abilian_devtools.pytest_plugin"
+
 [build-system]
 requires = ["uv-build>=0.8.4,<0.9.0"]
 build-backend = "uv_build"
 
 [dependency-groups]
 dev = [
+    # The pytest plugin's tests: a project's settings class.
+    "pydantic-settings>=2",
     "devtools>=0.12.2",
     "docformatter>=1.7.5",
     # "scriv>=1.5.1",

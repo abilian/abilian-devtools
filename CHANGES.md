@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **A pytest plugin: tests that ignore the machine's settings.** A project names its pydantic-settings class in its pytest configuration (`settings_class = "app.config:Settings"`); before any `conftest.py` is imported, the plugin removes the environment variables the class reads and turns off its `.env` file, so that a variable exported by direnv, or a secret in `.env`, can't make a test pass on one machine and fail on another. Without the option, it does nothing.
+
 ## [0.9.2] - 2025-01-23
 
 ### Fixed
